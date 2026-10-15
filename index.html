@@ -1,0 +1,848 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Αστερόσκονη</title>
+<!-- Η γραμματοσειρά έρχεται από το hub (Comfortaa). Κανένα CDN, κανένα Google Fonts (GAME-STANDARD §4). -->
+<link rel="stylesheet" href="/static/fonts/comfortaa.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%AD%90%3C/text%3E%3C/svg%3E">
+<style>
+/* ===== Χρώματα και μεγέθη (όλα σε ένα σημείο) ===== */
+:root {
+  --night: #16213e;
+  --panel: rgba(16, 24, 48, .92);
+  --ink: #fdfdfd;
+  --muted: #c8d0ec;
+  --sun: #ffd23f;
+  --grass: #3bceac;
+  --berry: #ee4266;
+  --sky: #5aa9e6;
+  --font: 'Comfortaa', 'Trebuchet MS', system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night); color: var(--ink);
+  font-family: var(--font); font-size: 20px; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+:where(button, a.btn, input) { font: inherit; color: inherit; }
+:where(button, a.btn) { cursor: pointer; border: 0; background: none; text-decoration: none; }
+:focus-visible { outline: 4px solid var(--sun); outline-offset: 3px; }
+
+canvas#game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
+
+/* ===== Κουμπιά που φαίνονται πάντα: παύση, ήχος, πλήρης οθόνη, πίσω στα παιχνίδια ===== */
+#hud { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center;
+  padding: max(10px, env(safe-area-inset-top)) 12px 0; pointer-events: none; z-index: 10; }
+#hud > * { pointer-events: auto; }
+#status { font-size: 22px; font-weight: 700; text-shadow: 0 2px 4px #000; padding: 6px 10px; }
+#bar { display: flex; gap: 10px; }
+.icon-btn { width: 64px; height: 64px; border-radius: 18px; font-size: 30px; line-height: 64px; text-align: center;
+  background: rgba(255, 255, 255, .14); border: 2px solid rgba(255, 255, 255, .3); display: inline-block; }
+.icon-btn:active { transform: scale(.94); }
+.icon-btn[aria-pressed="false"] { opacity: .55; }
+
+/* ===== Οθόνες (τίτλος, θέσεις, παύση, νίκη, ήττα) ===== */
+.screen { position: fixed; inset: 0; display: grid; place-items: center; z-index: 20; padding: 90px 16px 16px;
+  background: rgba(10, 14, 30, .72); }
+.card { background: var(--panel); border: 3px solid rgba(255, 255, 255, .2); border-radius: 28px; padding: 28px;
+  max-width: 640px; width: 100%; text-align: center; max-height: 100%; overflow: auto; }
+h1 { font-size: 44px; margin: 0 0 8px; color: var(--sun); }
+h2 { font-size: 32px; margin: 0 0 14px; }
+p { line-height: 1.5; margin: 8px 0; color: var(--muted); }
+.big-btn { display: block; width: 100%; min-height: 64px; margin: 12px 0 0; padding: 12px 18px; border-radius: 20px;
+  font-size: 24px; font-weight: 700; background: var(--grass); color: #10202a; }
+.big-btn.alt { background: var(--sky); }
+.big-btn.soft { background: rgba(255, 255, 255, .16); color: var(--ink); }
+.slot { text-align: left; }
+.slot small { display: block; font-size: 18px; font-weight: 500; opacity: .85; }
+.keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; text-align: left; margin: 14px 0 0; font-size: 18px; }
+kbd { font-family: inherit; font-weight: 700; background: rgba(255, 255, 255, .14); border-radius: 8px; padding: 2px 8px; }
+.row { display: flex; gap: 10px; margin-top: 12px; }
+.row input { flex: 1; min-width: 0; min-height: 64px; border-radius: 16px; border: 2px solid rgba(255, 255, 255, .3);
+  background: rgba(0, 0, 0, .3); padding: 0 14px; font-size: 24px; }
+.row .big-btn { width: auto; margin: 0; }
+#server-msg:empty { display: none; }
+
+/* ===== Αφή: εικονικό joystick αριστερά, κουμπιά ικανοτήτων δεξιά (≥ 64 px) ===== */
+#touch { position: fixed; inset: auto 0 0 0; height: 46%; z-index: 5; pointer-events: none; display: none; }
+body.touch[data-screen="play"] #touch { display: block; }
+#stick { position: absolute; left: max(16px, env(safe-area-inset-left)); bottom: 16px; width: 200px; height: 200px;
+  border-radius: 50%; background: rgba(255, 255, 255, .1); border: 3px solid rgba(255, 255, 255, .3);
+  pointer-events: auto; touch-action: none; }
+#knob { position: absolute; left: 65px; top: 65px; width: 70px; height: 70px; border-radius: 50%;
+  background: rgba(255, 255, 255, .45); }
+#abilities { position: absolute; right: max(16px, env(safe-area-inset-right)); bottom: 16px; display: grid;
+  grid-template-columns: repeat(3, 72px); gap: 12px; pointer-events: auto; touch-action: none; }
+.ab { position: relative; width: 72px; height: 72px; border-radius: 50%; font-size: 30px; background: rgba(255, 255, 255, .18);
+  border: 3px solid rgba(255, 255, 255, .4); overflow: hidden; }
+.ab::after { content: ''; position: absolute; inset: 0; background: rgba(0, 0, 0, .55);
+  transform: translateY(calc(100% - var(--cd, 0) * 100%)); }
+.ab.special { grid-column: 3; grid-row: 1 / span 2; height: auto; border-radius: 36px; background: rgba(255, 210, 63, .3); }
+.ab .k { position: absolute; left: 0; right: 0; bottom: 2px; font-size: 14px; z-index: 1; }
+
+/* ===== Κάθετη οθόνη σε tablet/κινητό: «γύρισε τη συσκευή» ===== */
+#rotate { position: fixed; inset: 0; z-index: 50; display: none; place-items: center; text-align: center;
+  background: var(--night); padding: 24px; font-size: 26px; }
+#rotate span { display: block; font-size: 80px; }
+@media (orientation: portrait) and (pointer: coarse) { #rotate { display: grid; } }
+
+@media (prefers-reduced-motion: reduce) { .icon-btn:active { transform: none; } }
+</style>
+</head>
+<body data-screen="title">
+<canvas id="game" aria-label="Ο κόσμος του παιχνιδιού"></canvas>
+
+<div id="hud">
+  <div id="status" role="status" aria-live="polite"></div>
+  <div id="bar">
+    <button class="icon-btn" id="pause-btn" aria-label="Παύση (P)">⏸</button>
+    <button class="icon-btn" id="sound-btn" aria-label="Ήχος (M)" aria-pressed="true">🔊</button>
+    <button class="icon-btn" id="full-btn" aria-label="Πλήρης οθόνη (F)">⛶</button>
+    <a class="icon-btn btn" id="home-btn" href="/" aria-label="Πίσω στα παιχνίδια">🏠</a>
+  </div>
+</div>
+
+<div id="touch" aria-hidden="true">
+  <div id="stick"><div id="knob"></div></div>
+  <div id="abilities">
+    <button class="ab" data-ab="0" tabindex="-1">✨<span class="k">1</span></button>
+    <button class="ab" data-ab="1" tabindex="-1">👟<span class="k">2</span></button>
+    <button class="ab special" data-ab="4" tabindex="-1">🌈<span class="k">Space</span></button>
+    <button class="ab" data-ab="2" tabindex="-1">🛡️<span class="k">3</span></button>
+    <button class="ab" data-ab="3" tabindex="-1">🧲<span class="k">4</span></button>
+  </div>
+</div>
+
+<section class="screen" id="title-screen">
+  <div class="card">
+    <h1>⭐ Αστερόσκονη</h1>
+    <p>Μάζεψε αστέρια και κάνε τα σκιουλάκια σπίθες!</p>
+    <button class="big-btn" id="play-btn">Παίζουμε! ✨</button>
+    <div class="keys">
+      <kbd>← ↑ → ↓ / WASD</kbd><span>κίνηση</span>
+      <kbd>1 2 3 4</kbd><span>λάμψη, τρέξιμο, ασπίδα, μαγνήτης</span>
+      <kbd>Space</kbd><span>ουράνιο τόξο</span>
+      <kbd>P / Esc</kbd><span>παύση</span>
+      <kbd>M · F</kbd><span>ήχος · πλήρης οθόνη</span>
+    </div>
+  </div>
+</section>
+
+<section class="screen" id="slots-screen" hidden>
+  <div class="card">
+    <h2>Ποια θέση;</h2>
+    <div id="server-box" hidden>
+      <div id="unlock-box">
+        <p>Οικογενειακός κωδικός για αποθήκευση στο σπίτι:</p>
+        <div class="row">
+          <input id="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="Κωδικός (4 ψηφία)">
+          <button class="big-btn" id="unlock-btn">Άνοιγμα</button>
+        </div>
+      </div>
+      <div id="profile-box" hidden>
+        <p>Ποιος παίζει;</p>
+        <div id="profile-list"></div>
+        <div class="row">
+          <input id="new-profile" maxlength="20" autocomplete="off" aria-label="Όνομα νέου προφίλ">
+          <button class="big-btn alt" id="add-profile">Νέο</button>
+        </div>
+      </div>
+      <p id="server-msg" role="status"></p>
+    </div>
+    <div id="slot-list"></div>
+    <button class="big-btn soft" id="slots-back">Πίσω</button>
+  </div>
+</section>
+
+<section class="screen" id="pause-screen" hidden>
+  <div class="card">
+    <h2>⏸ Παύση</h2>
+    <button class="big-btn" id="resume-btn">Συνέχεια ▶</button>
+    <button class="big-btn alt" id="save-btn">Αποθήκευση 💾</button>
+    <p id="save-msg" role="status"></p>
+    <button class="big-btn soft" id="quit-btn">Στον τίτλο</button>
+  </div>
+</section>
+
+<section class="screen" id="win-screen" hidden>
+  <div class="card">
+    <h2>🎉 Τα κατάφερες!</h2>
+    <p>Μάζεψες όλα τα αστέρια.</p>
+    <button class="big-btn" id="again-btn">Ξανά! ⭐</button>
+  </div>
+</section>
+
+<section class="screen" id="lose-screen" hidden>
+  <div class="card">
+    <h2>😴 Κουράστηκες λίγο</h2>
+    <p>Τα αστέρια σου τα κρατάς. Πάμε πάλι από την αρχή του λιβαδιού!</p>
+    <button class="big-btn" id="retry-btn">Ξανά ▶</button>
+  </div>
+</section>
+
+<div id="rotate"><div><span>🔄</span>Γύρισε τη συσκευή οριζόντια</div></div>
+
+<script>
+'use strict';
+/* =====================================================================================
+   CONFIG: όλες οι ρυθμίσεις του παιχνιδιού. Άλλαξε εδώ τη δυσκολία, όχι μέσα στον κώδικα.
+   ===================================================================================== */
+const CONFIG = Object.freeze({
+  slug: 'template',            // ίδιο με το games/<slug> στο hub: κλειδί αποθήκευσης και διεύθυνση API
+  world: { w: 1280, h: 720 },  // ο κόσμος σε «λογικά» pixel· η οθόνη κλιμακώνεται
+  hero: { speed: 330, radius: 26, hearts: 3, hurtGrace: 1.5 },
+  stars: { toWin: 10, onField: 3, radius: 20 },
+  shadows: { count: 4, speed: 110, radius: 26, respawn: 4 },
+  abilities: [                 // 1–4 και Space (σε αυτή τη σειρά)
+    { name: 'Λάμψη', cooldown: 3, radius: 230 },
+    { name: 'Τρέξιμο', cooldown: 5, duration: 2, boost: 1.8 },
+    { name: 'Ασπίδα', cooldown: 8, duration: 3 },
+    { name: 'Μαγνήτης', cooldown: 6, duration: 3, radius: 360 },
+    { name: 'Ουράνιο τόξο', cooldown: 20 },
+  ],
+  save: {
+    slots: 3,
+    server: false,             // Επίπεδο Β (save στο hub). Ανοίγει μόνο αν το hub έχει saves=True για το slug.
+    maxBytes: 65536,
+  },
+});
+
+const $ = (id) => document.getElementById(id);
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const now = () => performance.now() / 1000;
+
+/* =====================================================================================
+   ΑΠΟΘΗΚΕΥΣΗ — Επίπεδο Α: στη συσκευή (localStorage), πάντα μέσα σε try/catch.
+   Ένα κλειδί: game.<slug>.v1 = { v, sound, profile, slots: { <owner>: [θέση1, θέση2, θέση3] } }
+   owner = 'local' (χωρίς server) ή το id του προφίλ στο hub. Κάθε θέση: { saved_at, data, dirty }.
+   ===================================================================================== */
+const SAVE_KEY = `game.${CONFIG.slug}.v1`;
+const SCHEMA = 1;
+
+const Local = {
+  read() {
+    try {
+      const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
+      if (d && d.v === SCHEMA && d.slots && typeof d.slots === 'object') return d;
+    } catch (e) { /* χαλασμένο ή απαγορευμένο: ξεκινάμε καθαρά */ }
+    return { v: SCHEMA, sound: true, profile: null, slots: {} };
+  },
+  write(d) {
+    try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); return true; } catch (e) { return false; }
+  },
+};
+
+let store = Local.read();
+
+function slotsOf(owner) {
+  if (!Array.isArray(store.slots[owner])) store.slots[owner] = new Array(CONFIG.save.slots).fill(null);
+  return store.slots[owner];
+}
+
+/* =====================================================================================
+   ΑΠΟΘΗΚΕΥΣΗ — Επίπεδο Β: στο hub, χωριστά για κάθε παιχνίδι (GET/PUT /api/save/<slug>/<profile>/<slot>).
+   Αν ο server δεν απαντά, όλα συνεχίζουν στο Επίπεδο Α και η θέση μένει «dirty» για συγχρονισμό αργότερα.
+   ===================================================================================== */
+const Server = {
+  on: CONFIG.save.server,
+  state: 'off',                // 'off' | 'locked' | 'ok'
+  profiles: [],
+
+  async request(method, path, body) {
+    try {
+      const init = { method, credentials: 'same-origin', headers: {} };
+      if (body !== undefined) {
+        init.headers['Content-Type'] = 'application/json';
+        init.body = JSON.stringify(body);
+      }
+      return await fetch(path, init);
+    } catch (e) {
+      return null;             // χωρίς δίκτυο
+    }
+  },
+
+  async refresh() {
+    if (!this.on) { this.state = 'off'; return; }
+    const res = await this.request('GET', '/api/profiles');
+    if (res && res.status === 200) {
+      const body = await res.json().catch(() => ({}));
+      this.profiles = Array.isArray(body.profiles) ? body.profiles : [];
+      this.state = 'ok';
+    } else {
+      this.state = res && res.status === 401 ? 'locked' : 'off';
+    }
+  },
+
+  async unlock(pin) {
+    const res = await this.request('POST', '/api/unlock', { pin });
+    if (res && res.status === 204) { await this.refresh(); return 'ok'; }
+    if (res && res.status === 429) return 'wait';
+    if (res && res.status === 401) return 'wrong';
+    return 'off';
+  },
+
+  async addProfile(name) {
+    const res = await this.request('POST', '/api/profiles', { name });
+    if (res && res.status === 201) { await this.refresh(); return true; }
+    return false;
+  },
+
+  url(owner, i) {
+    return `/api/save/${encodeURIComponent(CONFIG.slug)}/${encodeURIComponent(owner)}/${i + 1}`;
+  },
+
+  async push(owner, i) {
+    const slot = slotsOf(owner)[i];
+    if (!this.on || owner === 'local' || !slot) return;
+    const res = await this.request('PUT', this.url(owner, i), { schema: SCHEMA, saved_at: slot.saved_at, data: slot.data });
+    if (res && res.status === 204) { slot.dirty = false; Local.write(store); }
+  },
+
+  async pull(owner, i) {
+    if (!this.on || owner === 'local' || this.state !== 'ok') return;
+    const res = await this.request('GET', this.url(owner, i));
+    if (!res) return;
+    const local = slotsOf(owner)[i];
+    if (res.status === 200) {
+      const remote = await res.json().catch(() => null);
+      if (remote && remote.data && (!local || remote.saved_at > local.saved_at)) {
+        slotsOf(owner)[i] = { saved_at: remote.saved_at, data: remote.data, dirty: false };
+        Local.write(store);
+        return;
+      }
+    }
+    if (local && local.dirty) await this.push(owner, i);
+  },
+
+  async syncPending() {
+    if (!this.on || this.state !== 'ok') return;
+    for (const owner of Object.keys(store.slots)) {
+      if (owner === 'local') continue;
+      for (let i = 0; i < CONFIG.save.slots; i++) {
+        if (slotsOf(owner)[i] && slotsOf(owner)[i].dirty) await this.push(owner, i);
+      }
+    }
+  },
+};
+
+function currentOwner() {
+  return Server.on && Server.state === 'ok' && store.profile ? String(store.profile.id) : 'local';
+}
+
+/* Αποθηκεύει την τρέχουσα πρόοδο: πρώτα στη συσκευή, μετά (αν γίνεται) στο hub. */
+function saveGame() {
+  if (G.slot < 0) return false;
+  const data = { stars: G.stars, wins: G.wins };
+  if (JSON.stringify(data).length > CONFIG.save.maxBytes) return false;
+  slotsOf(G.owner)[G.slot] = { saved_at: Date.now(), data, dirty: G.owner !== 'local' };
+  const ok = Local.write(store);
+  Server.push(G.owner, G.slot);
+  return ok;
+}
+
+/* =====================================================================================
+   ΗΧΟΣ: Web Audio, όλοι οι ήχοι φτιάχνονται με κώδικα. Ξεκινά μόνο μετά από το πρώτο πάτημα.
+   ===================================================================================== */
+const Sound = {
+  ctx: null,
+  master: null,
+  musicStep: 0,
+
+  unlock() {
+    if (this.ctx) { if (this.ctx.state === 'suspended') this.ctx.resume(); return; }
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return;
+    this.ctx = new Ctor();
+    this.master = this.ctx.createGain();
+    this.master.gain.value = store.sound ? 0.5 : 0;
+    this.master.connect(this.ctx.destination);
+    setInterval(() => this.music(), 420);
+  },
+
+  setOn(on) {
+    store.sound = on;
+    Local.write(store);
+    if (this.master) this.master.gain.value = on ? 0.5 : 0;
+    $('sound-btn').setAttribute('aria-pressed', String(on));
+    $('sound-btn').textContent = on ? '🔊' : '🔇';
+  },
+
+  tone(freq, dur, type = 'sine', vol = 0.3) {
+    if (!this.ctx || !store.sound) return;
+    const t = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(vol, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.connect(g).connect(this.master);
+    osc.start(t);
+    osc.stop(t + dur);
+  },
+
+  star() { this.tone(880, 0.12, 'triangle'); setTimeout(() => this.tone(1320, 0.15, 'triangle'), 80); },
+  spark() { this.tone(660, 0.2, 'sine', 0.2); },
+  hurt() { this.tone(200, 0.25, 'square', 0.12); },
+  win() { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => this.tone(f, 0.25, 'triangle'), i * 140)); },
+
+  // Ήσυχη μελωδία μόνο όσο παίζουμε (πεντατονική: δεν «χαλάει» ποτέ).
+  music() {
+    if (G.screen !== 'play') return;
+    const notes = [262, 294, 330, 392, 440, 392, 330, 294];
+    this.tone(notes[this.musicStep++ % notes.length], 0.35, 'sine', 0.05);
+  },
+};
+
+/* =====================================================================================
+   ΚΑΤΑΣΤΑΣΗ ΠΑΙΧΝΙΔΙΟΥ
+   ===================================================================================== */
+const W = CONFIG.world.w;
+const H = CONFIG.world.h;
+const G = {
+  screen: 'title',             // 'title' | 'slots' | 'play' | 'pause' | 'win' | 'lose'
+  owner: 'local',
+  slot: -1,
+  stars: 0,
+  wins: 0,
+  hearts: CONFIG.hero.hearts,
+  hero: { x: W / 2, y: H / 2, hurtUntil: 0 },
+  starsOnField: [],
+  shadows: [],
+  sparks: [],
+  ready: [0, 0, 0, 0, 0],      // πότε ξαναγεμίζει κάθε ικανότητα (χρόνος σε δευτ.)
+  active: { run: 0, shield: 0, magnet: 0 },
+};
+
+function setScreen(name) {
+  G.screen = name;
+  document.body.dataset.screen = name;
+  for (const s of ['title', 'slots', 'pause', 'win', 'lose']) $(`${s}-screen`).hidden = s !== name;
+  updateStatus();
+}
+
+function updateStatus() {
+  $('status').textContent = G.slot < 0 ? '' : `${'❤️'.repeat(G.hearts)}  ⭐ ${G.stars}/${CONFIG.stars.toWin}`;
+}
+
+function rnd(min, max) { return min + Math.random() * (max - min); }
+
+function spawnStar() {
+  G.starsOnField.push({ x: rnd(60, W - 60), y: rnd(110, H - 60), spin: rnd(0, 6) });
+}
+
+function spawnShadow() {
+  // Τα σκιουλάκια μπαίνουν από την άκρη, μακριά από τον ήρωα.
+  const side = Math.floor(rnd(0, 4));
+  const x = side === 0 ? 30 : side === 1 ? W - 30 : rnd(30, W - 30);
+  const y = side === 2 ? 100 : side === 3 ? H - 30 : rnd(100, H - 30);
+  const a = rnd(0, Math.PI * 2);
+  G.shadows.push({ x, y, vx: Math.cos(a), vy: Math.sin(a), wobble: rnd(0, 6), back: 0 });
+}
+
+/* Ασφαλές σημείο: ο ήρωας στη μέση, γεμάτες καρδιές. Τα αστέρια που μάζεψες μένουν. */
+function startLevel() {
+  G.hearts = CONFIG.hero.hearts;
+  G.hero = { x: W / 2, y: H / 2, hurtUntil: 0 };
+  G.starsOnField = [];
+  G.shadows = [];
+  G.sparks = [];
+  G.ready = [0, 0, 0, 0, 0];
+  G.active = { run: 0, shield: 0, magnet: 0 };
+  for (let i = 0; i < CONFIG.stars.onField; i++) spawnStar();
+  for (let i = 0; i < CONFIG.shadows.count; i++) spawnShadow();
+  setScreen('play');
+}
+
+function startSlot(i) {
+  G.owner = currentOwner();
+  G.slot = i;
+  const saved = slotsOf(G.owner)[i];
+  G.stars = saved ? saved.data.stars | 0 : 0;
+  G.wins = saved ? saved.data.wins | 0 : 0;
+  startLevel();
+}
+
+/* =====================================================================================
+   ΕΙΣΟΔΟΣ: πληκτρολόγιο και αφή
+   ===================================================================================== */
+const keys = new Set();
+const stick = { x: 0, y: 0, id: null };
+const MOVE_KEYS = { ArrowLeft: 'l', KeyA: 'l', ArrowRight: 'r', KeyD: 'r', ArrowUp: 'u', KeyW: 'u', ArrowDown: 'd', KeyS: 'd' };
+
+document.addEventListener('keydown', (e) => {
+  if (e.target instanceof HTMLInputElement) return;   // γράφουμε σε πεδίο: όχι συντομεύσεις
+  Sound.unlock();
+  if (MOVE_KEYS[e.code]) { keys.add(MOVE_KEYS[e.code]); e.preventDefault(); return; }
+  if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); e.preventDefault(); return; }
+  if (e.code === 'KeyM') { Sound.setOn(!store.sound); return; }
+  if (e.code === 'KeyF') { toggleFullscreen(); return; }
+  if (e.code === 'Space') { useAbility(4); e.preventDefault(); return; }
+  const n = ['Digit1', 'Digit2', 'Digit3', 'Digit4'].indexOf(e.code);
+  if (n >= 0) useAbility(n);
+});
+document.addEventListener('keyup', (e) => { if (MOVE_KEYS[e.code]) keys.delete(MOVE_KEYS[e.code]); });
+
+function moveVector() {
+  let x = (keys.has('r') ? 1 : 0) - (keys.has('l') ? 1 : 0) + stick.x;
+  let y = (keys.has('d') ? 1 : 0) - (keys.has('u') ? 1 : 0) + stick.y;
+  const len = Math.hypot(x, y);
+  if (len > 1) { x /= len; y /= len; }
+  return { x, y };
+}
+
+// Η αφή ανοίγει τα κουμπιά οθόνης (και στο πρώτο άγγιγμα, αν η συσκευή δεν το είπε από πριν).
+if (window.matchMedia('(pointer: coarse)').matches) document.body.classList.add('touch');
+document.addEventListener('pointerdown', (e) => {
+  Sound.unlock();
+  if (e.pointerType === 'touch') document.body.classList.add('touch');
+}, { capture: true });
+
+const stickEl = $('stick');
+function stickMove(e) {
+  const r = stickEl.getBoundingClientRect();
+  const dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
+  const dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+  const len = Math.max(1, Math.hypot(dx, dy));
+  stick.x = dx / len;
+  stick.y = dy / len;
+  $('knob').style.transform = `translate(${stick.x * 65}px, ${stick.y * 65}px)`;
+}
+function stickEnd(e) {
+  if (e.pointerId !== stick.id) return;
+  stick.id = null;
+  stick.x = 0;
+  stick.y = 0;
+  $('knob').style.transform = '';
+}
+stickEl.addEventListener('pointerdown', (e) => { stick.id = e.pointerId; stickEl.setPointerCapture(e.pointerId); stickMove(e); });
+stickEl.addEventListener('pointermove', (e) => { if (e.pointerId === stick.id) stickMove(e); });
+stickEl.addEventListener('pointerup', stickEnd);
+stickEl.addEventListener('pointercancel', stickEnd);
+for (const b of document.querySelectorAll('.ab')) {
+  b.addEventListener('pointerdown', (e) => { e.preventDefault(); useAbility(Number(b.dataset.ab)); });
+}
+
+/* =====================================================================================
+   ΚΟΥΜΠΙΑ ΚΑΙ ΟΘΟΝΕΣ
+   ===================================================================================== */
+function togglePause() {
+  if (G.screen === 'play') pauseGame();
+  else if (G.screen === 'pause') setScreen('play');
+}
+function pauseGame() {
+  if (G.screen !== 'play') return;
+  keys.clear();
+  $('save-msg').textContent = '';
+  setScreen('pause');
+}
+function toggleFullscreen() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  const exit = document.exitFullscreen || document.webkitExitFullscreen;
+  try {
+    const p = document.fullscreenElement || document.webkitFullscreenElement ? exit.call(document) : req.call(el);
+    if (p && p.catch) p.catch(() => {});
+  } catch (e) { /* χωρίς υποστήριξη (π.χ. iPhone): τίποτα */ }
+}
+
+// Αυτόματη παύση όταν κρύβεται η καρτέλα ή χάνεται η εστίαση.
+document.addEventListener('visibilitychange', () => { if (document.hidden) pauseGame(); });
+window.addEventListener('blur', pauseGame);
+window.addEventListener('online', () => { Server.refresh().then(() => Server.syncPending()); });
+
+$('pause-btn').addEventListener('click', togglePause);
+$('sound-btn').addEventListener('click', () => Sound.setOn(!store.sound));
+$('full-btn').addEventListener('click', toggleFullscreen);
+$('play-btn').addEventListener('click', openSlots);
+$('slots-back').addEventListener('click', () => setScreen('title'));
+$('resume-btn').addEventListener('click', () => setScreen('play'));
+$('save-btn').addEventListener('click', () => {
+  $('save-msg').textContent = saveGame() ? 'Αποθηκεύτηκε ✔' : 'Δεν έγινε αποθήκευση σε αυτή τη συσκευή';
+});
+$('quit-btn').addEventListener('click', () => { saveGame(); G.slot = -1; setScreen('title'); });
+$('again-btn').addEventListener('click', () => { G.stars = 0; saveGame(); startLevel(); });
+$('retry-btn').addEventListener('click', startLevel);
+$('unlock-btn').addEventListener('click', async () => {
+  const pin = $('pin').value;
+  $('pin').value = '';
+  const r = /^[0-9]{4}$/.test(pin) ? await Server.unlock(pin) : 'wrong';
+  $('server-msg').textContent = { ok: '', wrong: 'Λάθος κωδικός', wait: 'Περίμενε λίγο και ξαναδοκίμασε', off: 'Το σπίτι δεν απαντά: αποθήκευση μόνο εδώ' }[r];
+  if (r === 'ok') await Server.syncPending();
+  renderSlots();
+});
+$('add-profile').addEventListener('click', async () => {
+  const name = $('new-profile').value.trim();
+  if (!name) return;
+  $('new-profile').value = '';
+  if (!(await Server.addProfile(name))) $('server-msg').textContent = 'Δεν έγινε. Δοκίμασε άλλο όνομα.';
+  renderSlots();
+});
+
+async function openSlots() {
+  setScreen('slots');
+  $('server-msg').textContent = '';
+  await Server.refresh();
+  if (Server.state === 'ok') await Server.syncPending();
+  if (Server.state === 'off' && Server.on) $('server-msg').textContent = 'Το σπίτι δεν απαντά: αποθήκευση μόνο εδώ';
+  renderSlots();
+}
+
+function button(text, small, onClick, cls = 'big-btn alt slot') {
+  const b = document.createElement('button');
+  b.className = cls;
+  b.textContent = text;
+  if (small) {
+    const s = document.createElement('small');
+    s.textContent = small;
+    b.append(s);
+  }
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+async function renderSlots() {
+  $('server-box').hidden = !Server.on;
+  $('unlock-box').hidden = Server.state !== 'locked';
+  $('profile-box').hidden = Server.state !== 'ok';
+  const list = $('profile-list');
+  list.replaceChildren();
+  if (Server.state === 'ok') {
+    for (const p of Server.profiles) {
+      const chosen = store.profile && store.profile.id === p.id;
+      list.append(button(`${chosen ? '👉 ' : ''}${p.name}`, '', () => {
+        store.profile = { id: p.id, name: p.name };
+        Local.write(store);
+        renderSlots();
+      }, 'big-btn soft'));
+    }
+  }
+  const owner = currentOwner();
+  if (owner !== 'local') {
+    for (let i = 0; i < CONFIG.save.slots; i++) await Server.pull(owner, i);
+  }
+  const slotList = $('slot-list');
+  slotList.replaceChildren();
+  slotsOf(owner).forEach((s, i) => {
+    const info = s ? `⭐ ${s.data.stars | 0} · 🏆 ${s.data.wins | 0}` : 'κενή';
+    slotList.append(button(`Θέση ${i + 1}`, info, () => startSlot(i)));
+  });
+}
+
+/* =====================================================================================
+   ΙΚΑΝΟΤΗΤΕΣ (1–4, Space)
+   ===================================================================================== */
+function useAbility(n) {
+  if (G.screen !== 'play') return;
+  const t = now();
+  const ab = CONFIG.abilities[n];
+  if (t < G.ready[n]) return;
+  G.ready[n] = t + ab.cooldown;
+  const h = G.hero;
+  if (n === 0 || n === 4) {
+    // Λάμψη (κοντά) ή ουράνιο τόξο (παντού): τα σκιουλάκια γίνονται σπίθες και εξαφανίζονται.
+    const radius = n === 4 ? Infinity : ab.radius;
+    G.shadows = G.shadows.filter((s) => {
+      if (Math.hypot(s.x - h.x, s.y - h.y) > radius) return true;
+      burst(s.x, s.y);
+      setTimeout(spawnShadow, CONFIG.shadows.respawn * 1000);
+      return false;
+    });
+    Sound.spark();
+  }
+  if (n === 1) G.active.run = t + ab.duration;
+  if (n === 2) G.active.shield = t + ab.duration;
+  if (n === 3) G.active.magnet = t + ab.duration;
+}
+
+function burst(x, y) {
+  for (let i = 0; i < 14; i++) {
+    const a = rnd(0, Math.PI * 2);
+    const v = rnd(80, 260);
+    G.sparks.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: rnd(0.4, 0.9) });
+  }
+}
+
+/* =====================================================================================
+   ΕΝΗΜΕΡΩΣΗ ΚΟΣΜΟΥ: dt = δευτερόλεπτα από το προηγούμενο καρέ (ίδια ταχύτητα σε κάθε συσκευή)
+   ===================================================================================== */
+function update(dt) {
+  const t = now();
+  const h = G.hero;
+  const m = moveVector();
+  const speed = CONFIG.hero.speed * (t < G.active.run ? CONFIG.abilities[1].boost : 1);
+  h.x = clamp(h.x + m.x * speed * dt, CONFIG.hero.radius, W - CONFIG.hero.radius);
+  h.y = clamp(h.y + m.y * speed * dt, 90, H - CONFIG.hero.radius);
+
+  for (const s of G.shadows) {
+    s.wobble += dt * 3;
+    s.x += s.vx * CONFIG.shadows.speed * dt;
+    s.y += s.vy * CONFIG.shadows.speed * dt;
+    if (s.x < 30 || s.x > W - 30) s.vx *= -1;
+    if (s.y < 100 || s.y > H - 30) s.vy *= -1;
+    s.x = clamp(s.x, 30, W - 30);
+    s.y = clamp(s.y, 100, H - 30);
+    const near = Math.hypot(s.x - h.x, s.y - h.y) < CONFIG.hero.radius + CONFIG.shadows.radius;
+    if (near && t > h.hurtUntil && t > G.active.shield) {
+      // Χωρίς τιμωρία που απογοητεύει: μια καρδιά λιγότερη και λίγα δευτερόλεπτα ασφάλειας.
+      G.hearts -= 1;
+      h.hurtUntil = t + CONFIG.hero.hurtGrace;
+      Sound.hurt();
+      updateStatus();
+      if (G.hearts <= 0) { saveGame(); setScreen('lose'); return; }
+    }
+  }
+
+  const magnet = t < G.active.magnet;
+  G.starsOnField = G.starsOnField.filter((st) => {
+    st.spin += dt * 2;
+    const d = Math.hypot(st.x - h.x, st.y - h.y);
+    if (magnet && d < CONFIG.abilities[3].radius) {
+      st.x += ((h.x - st.x) / d) * 400 * dt;
+      st.y += ((h.y - st.y) / d) * 400 * dt;
+    }
+    if (d > CONFIG.hero.radius + CONFIG.stars.radius) return true;
+    G.stars += 1;
+    Sound.star();
+    burst(st.x, st.y);
+    setTimeout(spawnStar, 600);
+    return false;
+  });
+  if (G.stars >= CONFIG.stars.toWin) {
+    G.wins += 1;
+    G.stars = 0;
+    saveGame();
+    Sound.win();
+    setScreen('win');
+    return;
+  }
+  if (G.starsOnField.length !== CONFIG.stars.onField) updateStatus();
+
+  for (const p of G.sparks) {
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt;
+  }
+  G.sparks = G.sparks.filter((p) => p.life > 0);
+
+  for (const b of document.querySelectorAll('.ab')) {
+    const n = Number(b.dataset.ab);
+    b.style.setProperty('--cd', String(clamp((G.ready[n] - t) / CONFIG.abilities[n].cooldown, 0, 1)));
+  }
+}
+
+/* =====================================================================================
+   ΖΩΓΡΑΦΙΚΗ: όλα ζωγραφίζονται με κώδικα (σχήμα + χρώμα, για παιδιά με αχρωματοψία)
+   ===================================================================================== */
+const canvas = $('game');
+const ctx = canvas.getContext('2d');
+const view = { scale: 1, ox: 0, oy: 0, dpr: 1 };
+
+function resize() {
+  view.dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(innerWidth * view.dpr);
+  canvas.height = Math.round(innerHeight * view.dpr);
+  view.scale = Math.min(innerWidth / W, innerHeight / H);
+  view.ox = (innerWidth - W * view.scale) / 2;
+  view.oy = (innerHeight - H * view.scale) / 2;
+}
+window.addEventListener('resize', resize);
+resize();
+
+function starPath(x, y, r, spin) {
+  ctx.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const a = spin + (i * Math.PI) / 5;
+    const rr = i % 2 ? r * 0.45 : r;
+    ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr);
+  }
+  ctx.closePath();
+}
+
+function draw() {
+  const t = now();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#0e1630';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.setTransform(view.dpr * view.scale, 0, 0, view.dpr * view.scale, view.dpr * view.ox, view.dpr * view.oy);
+
+  // Λιβάδι
+  ctx.fillStyle = '#1f3b4d';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = 'rgba(255,255,255,.05)';
+  for (let x = 40; x < W; x += 80) for (let y = 120; y < H; y += 80) ctx.fillRect(x, y, 4, 4);
+
+  // Αστέρια: κίτρινο αστέρι με σκούρο περίγραμμα
+  for (const st of G.starsOnField) {
+    starPath(st.x, st.y, CONFIG.stars.radius, st.spin);
+    ctx.fillStyle = '#ffd23f';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#7a5c00';
+    ctx.stroke();
+  }
+
+  // Σκιουλάκια: μωβ «ζελέ» με δύο φιλικά μάτια (στρογγυλό σχήμα, όχι αστέρι)
+  for (const s of G.shadows) {
+    const r = CONFIG.shadows.radius + Math.sin(s.wobble) * 2;
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, r, 0, Math.PI * 2);
+    ctx.fillStyle = '#6b4fbb';
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(s.x - 8, s.y - 5, 6, 0, Math.PI * 2);
+    ctx.arc(s.x + 8, s.y - 5, 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Σπίθες
+  for (const p of G.sparks) {
+    ctx.globalAlpha = clamp(p.life, 0, 1);
+    ctx.fillStyle = '#fff6a8';
+    ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
+  }
+  ctx.globalAlpha = 1;
+
+  // Ήρωας (αναβοσβήνει όσο είναι προστατευμένος μετά από χτύπημα)
+  const h = G.hero;
+  if (!(t < h.hurtUntil && Math.floor(t * 10) % 2)) {
+    ctx.beginPath();
+    ctx.arc(h.x, h.y, CONFIG.hero.radius, 0, Math.PI * 2);
+    ctx.fillStyle = '#3bceac';
+    ctx.fill();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#0b5d4b';
+    ctx.stroke();
+    starPath(h.x, h.y, 12, -Math.PI / 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+  }
+  if (t < G.active.shield) {
+    ctx.beginPath();
+    ctx.arc(h.x, h.y, CONFIG.hero.radius + 12, 0, Math.PI * 2);
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = '#5aa9e6';
+    ctx.stroke();
+  }
+}
+
+/* =====================================================================================
+   ΚΥΡΙΟΣ ΒΡΟΧΟΣ: requestAnimationFrame + delta time
+   ===================================================================================== */
+let last = now();
+function frame() {
+  const t = now();
+  const dt = Math.min(t - last, 0.05);   // μετά από παύση/κρυφή καρτέλα: όχι «άλμα»
+  last = t;
+  if (G.screen === 'play') update(dt);
+  draw();
+  requestAnimationFrame(frame);
+}
+
+Sound.setOn(store.sound !== false);
+setScreen('title');
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
