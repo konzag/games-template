@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Changed
+- README pass 02 (GAME-STANDARD v1.2 §2a): the README has the tester sections as a skeleton for every new game
+  («Οθόνες και ροή», «Αποθήκευση», «Λίστα χειροκίνητων δοκιμών» AST-01..AST-21, «Τι άλλαξε στην τελευταία
+  έκδοση», «Γνωστοί περιορισμοί», «Ασφαλής δοκιμή», «Αναφορά προβλήματος»), filled in for the Αστερόσκονη example.
+  Issue forms `bug.yml` / `update.yml`, PR template checkbox, `tests/readme.spec.ts` (nine headings in order,
+  unique numbered IDs, issue forms, no hostnames/IPs). `GAME-STANDARD.md` synced to v1.2.
+
+
+## [2026-10-15] v1 (PR #1, release PR #2; UI identity doc PR #3, release PR #4)
+
 ### Added
 - Template for the family's games (GAME-STANDARD v1): the "Αστερόσκονη" example game in one `index.html`.
 - Common shell: title → slots/profile → game → win/lose; always-visible pause, sound, fullscreen and
