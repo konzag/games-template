@@ -23,4 +23,7 @@ first.** Every rule there applies to this repo and to every game created from it
 - Kids: nothing scary; enemies turn into sparks; losing returns to a safe point and keeps progress;
   shape + colour (not colour alone); text ≥ 18 px; Greek, `lang="el"`.
 - Flow: feature branch → PR to `staging` → CI green → release PR `staging → main` → owner GO. Signed commits.
+- README.md (Greek) is also the tester guide (GAME-STANDARD v1.2 §2a): nine fixed section headings, checked by
+  `tests/readme.spec.ts`; a new game keeps them, changes the test-ID prefix (AST) there and in the README, and the
+  game name in `.github/ISSUE_TEMPLATE/*.yml`. Public repo: no hostnames or IPs in any README.
 - Tests must keep: 10 s keyboard + 10 s touch with 0 console errors and 0 CSP violations.
