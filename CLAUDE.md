@@ -8,8 +8,18 @@ first.** Every rule there applies to this repo and to every game created from it
   `CONFIG` (all tuning), then the save client (level A `Local`, level B `Server`), `Sound`, the state `G`, input
   (keyboard + touch), screens, abilities, `update(dt)`, `draw()`, and the `requestAnimationFrame` loop.
 - `tests/smoke.spec.ts`: Playwright (Chromium), projects `desktop` (keyboard) and `tablet` (touch, landscape).
-- `tests/serve.mjs` + `tests/hub-csp.mjs`: a stand-in for games-hub that sends the hub's game-page CSP.
-- `.github/workflows/ci.yml`: `test` (Playwright) + `gitleaks` on every push.
+  Also level B error paths (401/429/413 from the mocked hub) and keyboard-only menus.
+- `tests/a11y.spec.ts` (axe, 0 serious/critical, light + dark), `tests/layout.spec.ts` (§3a sizes 1280x800,
+  1180x820, 820x1180, 360x740), `tests/lib.ts` (shared helpers, fake hub API; fake PIN `1234`).
+- `tests/serve.mjs` + `tests/hub-csp.mjs`: a stand-in for games-hub that sends the hub's game-page CSP;
+  `tests/hub-csp.spec.ts` pins it to games-hub `page_csp` (update both when the hub policy changes).
+- Test-count ratchet (TEST-STANDARD v1 §R-JS): `npm run test:count` fails when the listed Playwright tests are
+  fewer than `tests/floors.json` `tests`; `.coverage-floor` holds the same number and `tools/coverage-floor-check.sh`
+  (canonical copy from template-app) fails when it goes down (owner-only trailer `Coverage-Floor-Lowered-By: owner`).
+  **A game made from this template keeps `tests/floors.json` + `.coverage-floor` and raises both with new tests.**
+- `test.fail(true, 'APP BUG GAMES-TEMPLATE-T<n>: …')` marks a known template bug; fixing it turns the test into an
+  "unexpected pass", so the fix removes the mark.
+- `.github/workflows/ci.yml`: `test` (floor check, test count, Playwright) + `gitleaks` on every push.
 
 ## Rules
 - Served by games-hub at `/<slug>/` behind its CSP: one inline `<script>` (hashed by the hub), no `<script src>`

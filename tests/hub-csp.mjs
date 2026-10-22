@@ -1,4 +1,5 @@
 // The CSP that games-hub sends with every game page (games-hub app/services/catalog.py, page_csp).
+// tests/hub-csp.spec.ts pins the expected string; when the hub policy changes, update both.
 // The tests serve the game with the same policy, so a CSP violation fails here before it reaches the hub.
 import crypto from 'node:crypto';
 
@@ -12,6 +13,7 @@ export function gameCsp(html, { saves = false } = {}) {
     "style-src 'self' 'unsafe-inline'",
     "font-src 'self'",
     "img-src 'self' data:",
+    "manifest-src 'self'",
     "media-src 'self'",
     `connect-src ${saves ? "'self'" : "'none'"}`,
     "base-uri 'none'",
