@@ -4,36 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
-import { gameCsp } from './hub-csp.mjs';
-
-const SAVE_KEY = 'game.template.v1';
-
-/** Collects everything that must stay empty: console errors, page errors, CSP violations. */
-async function watch(page: Page, allow: RegExp[] = []) {
-  const problems: string[] = [];
-  page.on('console', (m) => {
-    if (m.type() === 'error' && !allow.some((re) => re.test(m.text() + ' ' + (m.location().url || '')))) {
-      problems.push(`console: ${m.text()}`);
-    }
-  });
-  page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
-  await page.addInitScript(() => {
-    document.addEventListener('securitypolicyviolation', (e) => {
-      console.error(`CSP violation: ${e.violatedDirective} ${e.blockedURI}`);
-    });
-  });
-  return problems;
-}
-
-async function startSlot(page: Page, tap = false) {
-  const click = (sel: string) => (tap ? page.locator(sel).first().tap() : page.locator(sel).first().click());
-  await click('#play-btn');
-  await expect(page.locator('body')).toHaveAttribute('data-screen', 'slots');
-  await click('#slot-list .slot');
-  await expect(page.locator('body')).toHaveAttribute('data-screen', 'play');
-}
-
-const screen = (page: Page) => page.locator('body').getAttribute('data-screen');
+import { API_NOISE, SAVE_KEY, fakeHub, screen, serverMode, startSlot, unlockedWithProfile, watch } from './lib';
 
 test('GAME-STANDARD §4: one inline <script>, no eval, no inline handlers, no external URLs', async ({}, info) => {
   test.skip(info.project.name !== 'desktop');
@@ -170,58 +141,6 @@ test('level A: progress and sound setting survive a reload; broken storage does 
   expect(problems).toEqual([]);
 });
 
-/** Serves index.html with CONFIG.save.server = true and the hub's CSP for a game with saves. */
-async function serverMode(page: Page) {
-  await page.route(
-    (url) => url.pathname === '/',
-    async (route) => {
-      const res = await route.fetch();
-      const html = (await res.text()).replace('server: false,', 'server: true,');
-      expect(html).toContain('server: true,');
-      await route.fulfill({
-        response: res,
-        body: html,
-        headers: { ...res.headers(), 'content-security-policy': gameCsp(html, { saves: true }) },
-      });
-    },
-  );
-}
-
-/** In-memory fake of the hub save API (games-hub app/api/saves.py). */
-function fakeHub(page: Page) {
-  const hub = { unlocked: false, down: false, profiles: [] as { id: number; name: string }[], saves: new Map<string, unknown>() };
-  page.route('**/api/**', async (route) => {
-    const req = route.request();
-    const path = new URL(req.url()).pathname;
-    if (hub.down) return route.abort();
-    const json = (status: number, body?: unknown) =>
-      route.fulfill({ status, contentType: 'application/json', body: body === undefined ? '' : JSON.stringify(body) });
-    if (path === '/api/unlock') {
-      hub.unlocked = req.postDataJSON().pin === '1234';
-      return json(hub.unlocked ? 204 : 401, hub.unlocked ? undefined : { error: { code: 'UNAUTHORIZED' } });
-    }
-    if (!hub.unlocked) return json(401, { error: { code: 'UNAUTHORIZED' } });
-    if (path === '/api/profiles' && req.method() === 'GET') return json(200, { profiles: hub.profiles });
-    if (path === '/api/profiles' && req.method() === 'POST') {
-      const p = { id: hub.profiles.length + 1, name: req.postDataJSON().name };
-      hub.profiles.push(p);
-      return json(201, p);
-    }
-    const m = path.match(/^\/api\/save\/template\/(\d+)\/([1-3])$/);
-    if (!m) return json(404);
-    if (req.method() === 'PUT') {
-      hub.saves.set(`${m[1]}/${m[2]}`, req.postDataJSON());
-      return json(204);
-    }
-    const s = hub.saves.get(`${m[1]}/${m[2]}`);
-    return s ? json(200, s) : json(404, { error: { code: 'NOT_FOUND' } });
-  });
-  return hub;
-}
-
-// The browser logs every 4xx/5xx and every aborted fetch as a console error; for the save API that is expected.
-const API_NOISE = [/\/api\//];
-
 test('level B: unlock with the family PIN, pick a profile, save to the hub', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop');
   const problems = await watch(page, API_NOISE);
@@ -274,5 +193,223 @@ test('level B: hub unreachable -> the game still starts and saves on the device'
   await page.locator('#save-btn').click();
   const saved = await page.evaluate((k) => JSON.parse(localStorage.getItem(k)!), SAVE_KEY);
   expect(saved.slots.local[0].dirty).toBe(false);
+  expect(problems).toEqual([]);
+});
+
+// ===== Level B error paths (GAME-STANDARD §5): the hub answers 401 / 429 / 413; the device save always wins. =====
+
+const LEVEL_A = { v: 1, sound: true, profile: null, slots: { local: [{ saved_at: 1, data: { stars: 7, wins: 2 }, dirty: false }, null, null] } };
+
+/** Puts a level A save on the device before the game reads it (one time only, not on later reloads). */
+async function seedLevelA(page: Page) {
+  await page.addInitScript(
+    ([k, v]) => {
+      if (!sessionStorage.getItem('seeded')) {
+        localStorage.setItem(k, v);
+        sessionStorage.setItem('seeded', '1');
+      }
+    },
+    [SAVE_KEY, JSON.stringify(LEVEL_A)],
+  );
+}
+
+const stored = (page: Page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k)!), SAVE_KEY);
+
+async function saveFromPause(page: Page) {
+  await page.keyboard.press('KeyP');
+  await expect(page.locator('#pause-screen')).toBeVisible();
+  await page.locator('#save-btn').click();
+  await expect(page.locator('#save-msg')).toHaveText('Αποθηκεύτηκε ✔');
+}
+
+/** The game is still alive: back to play, the loop runs, the HUD status is drawn. */
+async function stillPlaying(page: Page) {
+  await page.keyboard.press('Escape');
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'play');
+  await page.keyboard.down('ArrowRight');
+  await page.waitForTimeout(500);
+  await page.keyboard.up('ArrowRight');
+  await expect(page.locator('body')).toHaveAttribute('data-screen', /play|win|lose/);
+  await expect(page.locator('#status')).toContainText('⭐');
+}
+
+test('level B: 401 after expiry asks for the PIN again and keeps the local save', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop');
+  test.fail(true, 'APP BUG GAMES-TEMPLATE-T5: Server.push/pull ignore a 401 from /api/save; the session stays "ok", the save stays dirty and the unlock box is never shown again');
+  const problems = await watch(page, API_NOISE);
+  await seedLevelA(page);
+  const hub = await unlockedWithProfile(page);
+  hub.override = (path) => (path.startsWith('/api/save/') ? { status: 401, body: { error: { code: 'UNAUTHORIZED' } } } : undefined);
+  await page.locator('#slot-list .slot').first().click();
+  await saveFromPause(page);
+  const after = await stored(page);
+  expect(after.slots.local).toEqual(LEVEL_A.slots.local);
+  expect(after.slots['1'][0]).toEqual(expect.objectContaining({ dirty: true }));
+  await stillPlaying(page);
+  expect(problems).toEqual([]);
+  // The hub said «not unlocked»: the next visit to the slot screen asks for the family PIN again.
+  await page.keyboard.press('KeyP');
+  await page.locator('#quit-btn').click();
+  await page.locator('#play-btn').click();
+  await expect(page.locator('#unlock-box')).toBeVisible({ timeout: 3_000 });
+});
+
+test('level B: whole session expired -> the slot screen asks for the PIN again, local save kept, dirty save sent after unlock', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop');
+  const problems = await watch(page, API_NOISE);
+  await seedLevelA(page);
+  const hub = await unlockedWithProfile(page);
+  await page.locator('#slot-list .slot').first().click();
+  hub.unlocked = false; // the hub cookie expired: every call except /api/unlock answers 401
+  await saveFromPause(page);
+  const dirty = (await stored(page)).slots['1'][0];
+  expect(dirty.dirty).toBe(true);
+  await stillPlaying(page);
+  await page.keyboard.press('KeyP');
+  await page.locator('#quit-btn').click();
+  await page.locator('#play-btn').click();
+  await expect(page.locator('#unlock-box')).toBeVisible();
+  expect((await stored(page)).slots.local).toEqual(LEVEL_A.slots.local);
+  await page.locator('#pin').fill('1234');
+  await page.locator('#unlock-btn').click();
+  await expect(page.locator('#profile-box')).toBeVisible();
+  await expect.poll(() => (hub.saves.get('1/1') as { saved_at?: number } | undefined)?.saved_at).toBeGreaterThanOrEqual(dirty.saved_at);
+  expect(problems).toEqual([]);
+});
+
+test('level B: 429 lockout shows a wait message', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop');
+  const problems = await watch(page, API_NOISE);
+  const consoleText: string[] = [];
+  const urls: string[] = [];
+  page.on('console', (m) => consoleText.push(m.text()));
+  page.on('request', (r) => urls.push(r.url()));
+  await serverMode(page);
+  const hub = fakeHub(page);
+  hub.override = (path) => (path === '/api/unlock' ? { status: 429, body: { error: { code: 'TOO_MANY_REQUESTS' } } } : undefined);
+  await page.goto('/');
+  await page.locator('#play-btn').click();
+  await expect(page.locator('#unlock-box')).toBeVisible();
+  await page.locator('#pin').fill('1234');
+  await page.locator('#unlock-btn').click();
+  await expect(page.locator('#server-msg')).toHaveText('Περίμενε λίγο και ξαναδοκίμασε');
+  await expect(page.locator('#pin')).toHaveValue('');
+  await expect(page.locator('#unlock-box')).toBeVisible();
+  // No crash: the device slots still work.
+  await page.locator('#slot-list .slot').first().click();
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'play');
+  expect(hub.requests.filter((r) => r.url.endsWith('/api/unlock'))).toHaveLength(1);
+  expect(consoleText.filter((t) => t.includes('1234'))).toEqual([]);
+  expect([...urls, ...hub.requests.map((r) => r.url)].filter((u) => u.includes('1234'))).toEqual([]);
+  expect(JSON.stringify(await page.evaluate(() => ({ ...localStorage, ...sessionStorage })))).not.toContain('1234');
+  expect(problems).toEqual([]);
+});
+
+test('level B: a save over 64 KB is refused cleanly', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop');
+  const problems = await watch(page, API_NOISE);
+  const hub = await unlockedWithProfile(page);
+  let refused = 0;
+  hub.override = (path, method) => {
+    if (method === 'PUT' && path.startsWith('/api/save/') && refused === 0) {
+      refused++;
+      return { status: 413, body: { error: { code: 'PAYLOAD_TOO_LARGE' } } };
+    }
+    return undefined;
+  };
+  await page.locator('#slot-list .slot').first().click();
+  await saveFromPause(page);
+  await expect.poll(() => refused).toBe(1);
+  expect(hub.saves.size).toBe(0);
+  const kept = (await stored(page)).slots['1'][0];
+  expect(kept).toEqual(expect.objectContaining({ dirty: true, data: expect.objectContaining({ stars: expect.any(Number) }) }));
+  await stillPlaying(page);
+  // The next save goes out normally and clears the dirty mark.
+  await saveFromPause(page);
+  await expect.poll(() => hub.saves.has('1/1')).toBe(true);
+  await expect.poll(async () => (await stored(page)).slots['1'][0].dirty).toBe(false);
+  expect(problems).toEqual([]);
+});
+
+// ===== §3a keyboard: every menu reachable with Tab + Enter, and the focus ring is visible. =====
+
+/** Presses Tab until `sel` has the focus (at most 20 times) and returns its focus ring. */
+async function tabTo(page: Page, sel: string) {
+  for (let i = 0; i < 20; i++) {
+    await page.keyboard.press('Tab');
+    const ring = await page.evaluate((s) => {
+      const el = document.activeElement as HTMLElement | null;
+      if (!el || !el.matches(s)) return null;
+      const st = getComputedStyle(el);
+      return { visible: el.matches(':focus-visible'), style: st.outlineStyle, width: parseFloat(st.outlineWidth) };
+    }, sel);
+    if (ring) return ring;
+  }
+  throw new Error(`Tab never reached ${sel}`);
+}
+
+async function tabEnter(page: Page, sel: string) {
+  const ring = await tabTo(page, sel);
+  expect(ring, sel).toEqual({ visible: true, style: 'solid', width: expect.any(Number) });
+  expect(ring.width, `${sel} outline width`).toBeGreaterThanOrEqual(2);
+  await page.keyboard.press('Enter');
+}
+
+test('keyboard only: every menu reachable with Tab/Enter, focus visible', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop');
+  const problems = await watch(page);
+  await page.goto('/');
+  for (const id of ['#pause-btn', '#sound-btn', '#full-btn', '#home-btn']) {
+    const ring = await tabTo(page, id);
+    expect(ring.visible && ring.style !== 'none', id).toBe(true);
+  }
+  await tabEnter(page, '#play-btn');
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'slots');
+  await tabEnter(page, '#slots-back');
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'title');
+  await tabEnter(page, '#play-btn');
+  await expect(page.locator('#slot-list .slot')).toHaveCount(3);
+  await tabEnter(page, '#slot-list .slot:nth-child(2)');
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'play');
+  await page.keyboard.press('KeyP');
+  await expect(page.locator('#pause-screen')).toBeVisible();
+  await tabEnter(page, '#save-btn');
+  await expect(page.locator('#save-msg')).toHaveText('Αποθηκεύτηκε ✔');
+  await tabEnter(page, '#resume-btn');
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'play');
+  await page.keyboard.press('KeyP');
+  await tabEnter(page, '#quit-btn');
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'title');
+  // The end screens: their single button is reachable too (setScreen = the game's own global, only to get there).
+  for (const [s, btn] of [['win', '#again-btn'], ['lose', '#retry-btn']] as const) {
+    await page.evaluate((name) => (window as unknown as { setScreen: (n: string) => void }).setScreen(name), s);
+    await tabEnter(page, btn);
+    await expect(page.locator('body')).toHaveAttribute('data-screen', 'play');
+  }
+  expect(problems).toEqual([]);
+});
+
+// ===== P3: old or foreign data on the device =====
+
+test('an older or foreign level A save is ignored', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop');
+  const problems = await watch(page);
+  await page.addInitScript((k) => {
+    if (sessionStorage.getItem('seeded')) return;
+    localStorage.setItem(k, '{"v":0,"slots":{"local":[{"saved_at":1,"data":{"stars":9}}]}}');
+    localStorage.setItem('game.other.v1', '{"v":1,"keep":true}');
+    localStorage.setItem('unrelated', 'x');
+    sessionStorage.setItem('seeded', '1');
+  }, SAVE_KEY);
+  await page.goto('/');
+  await page.locator('#play-btn').click();
+  await expect(page.locator('#slot-list .slot').first()).toContainText('κενή');
+  await page.locator('#slot-list .slot').first().click();
+  await saveFromPause(page);
+  const s = await stored(page);
+  expect(s.v).toBe(1);
+  expect(s.slots.local).toHaveLength(3);
+  expect(s.slots.local[0]).toEqual(expect.objectContaining({ dirty: false, data: expect.objectContaining({ stars: expect.any(Number) }) }));
+  expect(await page.evaluate(() => [localStorage.getItem('game.other.v1'), localStorage.getItem('unrelated')])).toEqual(['{"v":1,"keep":true}', 'x']);
   expect(problems).toEqual([]);
 });

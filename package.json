@@ -6,9 +6,12 @@
   "type": "module",
   "scripts": {
     "serve": "node tests/serve.mjs",
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:count": "playwright test --list --reporter=json | node tests/count-floor.mjs",
+    "test:floor": "bash tools/coverage-floor-check.sh"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@playwright/test": "1.64.0"
   }
 }
