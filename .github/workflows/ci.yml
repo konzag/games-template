@@ -1,6 +1,7 @@
 name: CI
 
-# Every push runs the Playwright smoke (GAME-STANDARD §7) and a secret scan. Same conventions as the fleet:
+# Every push runs the Playwright tests (GAME-STANDARD §3a/§5/§7: smoke, axe, layout, saves), the test-count
+# ratchet (TEST-STANDARD v1 §R-JS) and a secret scan. Same conventions as the fleet:
 # push only (a PR shows the push run of its head commit), superseded runs cancelled, actions pinned by SHA,
 # read-only token, pinned and checksum-verified tools.
 on:
@@ -25,6 +26,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2   # coverage-floor-check.sh compares with the base branch (HEAD^1 on staging/main pushes)
+      - name: Test floor not lowered (TEST-STANDARD v1 §R; floor = test count in .coverage-floor)
+        run: bash tools/coverage-floor-check.sh
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
@@ -33,7 +38,9 @@ jobs:
         run: npm ci
       - name: Install Chromium
         run: npx playwright install --with-deps chromium
-      - name: Playwright smoke (keyboard + touch, 0 console errors, hub CSP)
+      - name: Test count >= floor (tests/floors.json)
+        run: npm run test:count
+      - name: Playwright (smoke, axe light/dark, layout 4 sizes, level B errors; hub CSP)
         run: npx playwright test
       - name: Upload Playwright report
         if: failure()
