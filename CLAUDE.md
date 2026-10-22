@@ -19,7 +19,9 @@ first.** Every rule there applies to this repo and to every game created from it
   **A game made from this template keeps `tests/floors.json` + `.coverage-floor` and raises both with new tests.**
 - `test.fail(true, 'APP BUG GAMES-TEMPLATE-T<n>: …')` marks a known template bug; fixing it turns the test into an
   "unexpected pass", so the fix removes the mark.
-- `.github/workflows/ci.yml`: `test` (floor check, test count, Playwright) + `gitleaks` on every push.
+- `.github/workflows/ci.yml`: `test` (floor check, test count, Playwright) + `gitleaks` on every PR into staging/main
+  and every push to staging/main. A ruleset requires these two check names: a game keeps the job ids and
+  `tests/ci-workflow.spec.ts`.
 
 ## Rules
 - Served by games-hub at `/<slug>/` behind its CSP: one inline `<script>` (hashed by the hub), no `<script src>`
