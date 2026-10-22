@@ -2,7 +2,7 @@
 // every menu button stays inside the viewport, 0 console errors and 0 CSP violations. The screens are opened with
 // the keyboard (focus + Enter) so these checks do not depend on what covers what; that is checked separately below.
 import { expect, test, type Page } from '@playwright/test';
-import { startSlot, watch } from './lib';
+import { SAVE_KEY, startSlot, watch } from './lib';
 
 const SIZES = [
   [1280, 800],
@@ -58,7 +58,6 @@ async function walkScreens(page: Page) {
 for (const scheme of ['light', 'dark'] as const) {
   for (const [w, h] of SIZES) {
     test(`fits ${w}x${h} (${scheme})`, async ({ page }) => {
-      test.fail(w === 360, 'APP BUG GAMES-TEMPLATE-T2: at 360 px the HUD row (status + 4 buttons) is wider than the screen during play, 🏠 is cut off');
       const problems = await watch(page);
       await page.emulateMedia({ colorScheme: scheme });
       await page.setViewportSize({ width: w, height: h });
@@ -82,10 +81,9 @@ async function covered(page: Page, sels: string[]) {
   }, sels);
 }
 
-const HUD = ['#pause-btn', '#sound-btn', '#full-btn', '#home-btn'];
+const HUD = ['#pause-btn', '#sound-btn', '#theme-btn', '#full-btn', '#home-btn'];
 
-test('§3 HUD buttons ⏸ 🔊 ⛶ 🏠 can be pressed on every screen', async ({ page }) => {
-  test.fail(true, 'APP BUG GAMES-TEMPLATE-T1: every .screen overlay (z-index 20) covers the HUD (z-index 10), so on title, slots, pause, win and lose the HUD buttons cannot be clicked or tapped');
+test('§3 HUD buttons ⏸ 🔊 🌓 ⛶ 🏠 can be pressed on every screen', async ({ page }) => {
   const problems = await watch(page);
   await page.goto('/');
   const hits: string[] = [];
@@ -111,7 +109,6 @@ for (const [w, h] of [
 ] as const) {
   test(`§3a portrait touch ${w}x${h}: title and slot menus stay readable and reachable`, async ({ page }, info) => {
     test.skip(info.project.name !== 'tablet', 'the rotate hint is shown only for a coarse pointer');
-    test.fail(true, 'APP BUG GAMES-TEMPLATE-T3: in portrait on touch the rotate hint (#rotate, z-index 50) covers the whole page, so the title and slot menus cannot be read or tapped');
     await page.setViewportSize({ width: w, height: h });
     await page.goto('/');
     await expect(page.locator('#rotate')).toBeVisible();
@@ -124,7 +121,6 @@ for (const [w, h] of [
 }
 
 test('§3a the shell follows the device light/dark setting', async ({ page }) => {
-  test.fail(true, 'APP BUG GAMES-TEMPLATE-T4: no prefers-color-scheme styles and no theme switch; the shell is dark in both schemes');
   const look = async (scheme: 'light' | 'dark') => {
     await page.emulateMedia({ colorScheme: scheme });
     await page.goto('/');
@@ -134,6 +130,38 @@ test('§3a the shell follows the device light/dark setting', async ({ page }) =>
     });
   };
   expect(await look('light')).not.toEqual(await look('dark'));
+});
+
+test('§3a the 🌓 switch goes auto -> light -> dark -> auto, wins over the device setting and is remembered', async ({ page }, info) => {
+  const problems = await watch(page);
+  const tap = info.project.name === 'tablet';
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('/');
+  const btn = page.locator('#theme-btn');
+  const theme = () => page.evaluate(() => document.documentElement.dataset.theme);
+  const saved = () => page.evaluate((k) => JSON.parse(localStorage.getItem(k) || '{}').theme, SAVE_KEY);
+  const box = await btn.boundingBox();
+  expect(Math.min(box!.width, box!.height)).toBeGreaterThanOrEqual(56);
+  await expect(btn).toHaveAttribute('aria-label', /συσκευή/);
+  expect(await theme()).toBe('dark');
+  for (const [want, label] of [['light', /φωτεινά/], ['dark', /σκοτεινά/], ['auto', /συσκευή/], ['light', /φωτεινά/]] as const) {
+    await (tap ? btn.tap() : btn.click());
+    await expect(btn).toHaveAttribute('aria-label', label);
+    expect(await saved()).toBe(want);
+  }
+  expect(await theme()).toBe('light');
+  // Remembered in game.<slug>.v1: after a reload the device still says dark, the shell stays light.
+  await page.reload();
+  expect(await theme()).toBe('light');
+  expect(await saved()).toBe('light');
+  // Back to auto: the shell follows the device again, also when the device setting changes while playing.
+  await (tap ? btn.tap() : btn.click());
+  await (tap ? btn.tap() : btn.click());
+  expect(await saved()).toBe('auto');
+  expect(await theme()).toBe('dark');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect.poll(theme).toBe('light');
+  expect(problems).toEqual([]);
 });
 
 test('touch controls and HUD stay inside the screen while playing (landscape tablet)', async ({ page }, info) => {

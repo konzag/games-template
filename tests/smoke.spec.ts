@@ -235,7 +235,6 @@ async function stillPlaying(page: Page) {
 
 test('level B: 401 after expiry asks for the PIN again and keeps the local save', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop');
-  test.fail(true, 'APP BUG GAMES-TEMPLATE-T5: Server.push/pull ignore a 401 from /api/save; the session stays "ok", the save stays dirty and the unlock box is never shown again');
   const problems = await watch(page, API_NOISE);
   await seedLevelA(page);
   const hub = await unlockedWithProfile(page);
