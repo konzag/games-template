@@ -18,7 +18,27 @@
   --grass: #3bceac;
   --berry: #ee4266;
   --sky: #5aa9e6;
+  --title: #ffd23f;
+  --veil: rgba(10, 14, 30, .72);
+  --line: rgba(255, 255, 255, .3);
+  --soft: rgba(255, 255, 255, .14);
+  --field: rgba(0, 0, 0, .3);
   --font: 'Comfortaa', 'Trebuchet MS', system-ui, sans-serif;
+  color-scheme: dark;
+}
+/* Φωτεινό θέμα για το «κέλυφος» (οθόνες, κάρτες, κουμπιά, HUD). Ο κόσμος στον καμβά κρατά τα χρώματά του.
+   Το data-theme το βάζει ο κώδικας: ακολουθεί τη συσκευή (prefers-color-scheme) ή την επιλογή του κουμπιού 🌓. */
+:root[data-theme="light"] {
+  --night: #eef3ff;
+  --panel: rgba(255, 255, 255, .95);
+  --ink: #1b2440;
+  --muted: #3d4766;
+  --title: #7a4f00;
+  --veil: rgba(226, 233, 250, .72);
+  --line: rgba(27, 36, 64, .3);
+  --soft: rgba(27, 36, 64, .1);
+  --field: rgba(255, 255, 255, .9);
+  color-scheme: light;
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; overflow: hidden; background: var(--night); color: var(--ink);
@@ -32,34 +52,44 @@ canvas#game { position: fixed; inset: 0; width: 100%; height: 100%; display: blo
 
 /* ===== Κουμπιά που φαίνονται πάντα: παύση, ήχος, πλήρης οθόνη, πίσω στα παιχνίδια ===== */
 #hud { position: fixed; top: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center;
-  padding: max(10px, env(safe-area-inset-top)) 12px 0; pointer-events: none; z-index: 10; }
-#hud > * { pointer-events: auto; }
-#status { font-size: 22px; font-weight: 700; text-shadow: 0 2px 4px #000; padding: 6px 10px; }
+  padding: max(10px, env(safe-area-inset-top)) 12px 0; pointer-events: none; z-index: 30; }
+/* Πάνω από τις οθόνες (z-index 20) ώστε ⏸ 🔊 🌓 ⛶ 🏠 να πατιούνται παντού· κάτω από το «γύρισε τη συσκευή» (50). */
+#bar { pointer-events: auto; }
+#status { font-size: 22px; font-weight: 700; padding: 6px 12px; border-radius: 16px; background: var(--panel); }
+#status:empty { display: none; }
 #bar { display: flex; gap: 10px; }
-.icon-btn { width: 64px; height: 64px; border-radius: 18px; font-size: 30px; line-height: 64px; text-align: center;
-  background: rgba(255, 255, 255, .14); border: 2px solid rgba(255, 255, 255, .3); display: inline-block; }
+.icon-btn { width: 64px; height: 64px; border-radius: 18px; font-size: 30px; line-height: 60px; text-align: center;
+  background: var(--soft); border: 2px solid var(--line); display: inline-block; }
 .icon-btn:active { transform: scale(.94); }
 .icon-btn[aria-pressed="false"] { opacity: .55; }
+/* Στενή οθόνη (κινητό 360 px): η γραμμή κατάστασης πάει κάτω από τα κουμπιά και τα κουμπιά γίνονται 56 px. */
+@media (max-width: 520px) {
+  #hud { flex-wrap: wrap; justify-content: flex-end; gap: 8px; padding-left: 8px; padding-right: 8px; }
+  #status { order: 1; font-size: 20px; }
+  #bar { gap: 8px; }
+  .icon-btn { width: 56px; height: 56px; line-height: 52px; font-size: 26px; }
+  .screen { padding-top: 130px; }
+}
 
 /* ===== Οθόνες (τίτλος, θέσεις, παύση, νίκη, ήττα) ===== */
 .screen { position: fixed; inset: 0; display: grid; place-items: center; z-index: 20; padding: 90px 16px 16px;
-  background: rgba(10, 14, 30, .72); }
-.card { background: var(--panel); border: 3px solid rgba(255, 255, 255, .2); border-radius: 28px; padding: 28px;
+  background: var(--veil); }
+.card { background: var(--panel); border: 3px solid var(--line); border-radius: 28px; padding: 28px;
   max-width: 640px; width: 100%; text-align: center; max-height: 100%; overflow: auto; }
-h1 { font-size: 44px; margin: 0 0 8px; color: var(--sun); }
+h1 { font-size: 44px; margin: 0 0 8px; color: var(--title); }
 h2 { font-size: 32px; margin: 0 0 14px; }
 p { line-height: 1.5; margin: 8px 0; color: var(--muted); }
 .big-btn { display: block; width: 100%; min-height: 64px; margin: 12px 0 0; padding: 12px 18px; border-radius: 20px;
   font-size: 24px; font-weight: 700; background: var(--grass); color: #10202a; }
 .big-btn.alt { background: var(--sky); }
-.big-btn.soft { background: rgba(255, 255, 255, .16); color: var(--ink); }
+.big-btn.soft { background: var(--soft); color: var(--ink); }
 .slot { text-align: left; }
 .slot small { display: block; font-size: 18px; font-weight: 500; opacity: .85; }
 .keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; text-align: left; margin: 14px 0 0; font-size: 18px; }
-kbd { font-family: inherit; font-weight: 700; background: rgba(255, 255, 255, .14); border-radius: 8px; padding: 2px 8px; }
+kbd { font-family: inherit; font-weight: 700; background: var(--soft); border-radius: 8px; padding: 2px 8px; }
 .row { display: flex; gap: 10px; margin-top: 12px; }
-.row input { flex: 1; min-width: 0; min-height: 64px; border-radius: 16px; border: 2px solid rgba(255, 255, 255, .3);
-  background: rgba(0, 0, 0, .3); padding: 0 14px; font-size: 24px; }
+.row input { flex: 1; min-width: 0; min-height: 64px; border-radius: 16px; border: 2px solid var(--line);
+  background: var(--field); padding: 0 14px; font-size: 24px; }
 .row .big-btn { width: auto; margin: 0; }
 #server-msg:empty { display: none; }
 
@@ -84,7 +114,15 @@ body.touch[data-screen="play"] #touch { display: block; }
 #rotate { position: fixed; inset: 0; z-index: 50; display: none; place-items: center; text-align: center;
   background: var(--night); padding: 24px; font-size: 26px; }
 #rotate span { display: block; font-size: 80px; }
-@media (orientation: portrait) and (pointer: coarse) { #rotate { display: grid; } }
+@media (orientation: portrait) and (pointer: coarse) {
+  #rotate { display: grid; }
+  /* Στα μενού (τίτλος, θέσεις/προφίλ, παύση, νίκη, ήττα) μόνο μια λωρίδα κάτω, που δεν «πιάνει» τα πατήματα,
+     ώστε τα μενού να διαβάζονται και να πατιούνται και σε κάθετη θέση (GAME-STANDARD §3a). */
+  body:not([data-screen="play"]) #rotate { inset: auto 0 0 0; display: block; pointer-events: none; font-size: 20px;
+    padding: 10px 16px max(10px, env(safe-area-inset-bottom)); background: var(--panel); border-top: 3px solid var(--line); }
+  body:not([data-screen="play"]) #rotate span { display: inline; font-size: 28px; margin-right: 8px; }
+  body:not([data-screen="play"]) .screen { padding-bottom: 80px; }
+}
 
 @media (prefers-reduced-motion: reduce) { .icon-btn:active { transform: none; } }
 </style>
@@ -97,6 +135,7 @@ body.touch[data-screen="play"] #touch { display: block; }
   <div id="bar">
     <button class="icon-btn" id="pause-btn" aria-label="Παύση (P)">⏸</button>
     <button class="icon-btn" id="sound-btn" aria-label="Ήχος (M)" aria-pressed="true">🔊</button>
+    <button class="icon-btn" id="theme-btn" aria-label="Χρώματα: όπως η συσκευή">🌓</button>
     <button class="icon-btn" id="full-btn" aria-label="Πλήρης οθόνη (F)">⛶</button>
     <a class="icon-btn btn" id="home-btn" href="/" aria-label="Πίσω στα παιχνίδια">🏠</a>
   </div>
@@ -213,19 +252,24 @@ const now = () => performance.now() / 1000;
 
 /* =====================================================================================
    ΑΠΟΘΗΚΕΥΣΗ — Επίπεδο Α: στη συσκευή (localStorage), πάντα μέσα σε try/catch.
-   Ένα κλειδί: game.<slug>.v1 = { v, sound, profile, slots: { <owner>: [θέση1, θέση2, θέση3] } }
+   Ένα κλειδί: game.<slug>.v1 = { v, sound, theme, profile, slots: { <owner>: [θέση1, θέση2, θέση3] } }
+   theme = 'auto' (όπως η συσκευή) | 'light' | 'dark'· παλιά αρχεία χωρίς theme παίρνουν 'auto' (ίδιο SCHEMA).
    owner = 'local' (χωρίς server) ή το id του προφίλ στο hub. Κάθε θέση: { saved_at, data, dirty }.
    ===================================================================================== */
 const SAVE_KEY = `game.${CONFIG.slug}.v1`;
 const SCHEMA = 1;
+const THEMES = ['auto', 'light', 'dark'];
 
 const Local = {
   read() {
     try {
       const d = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
-      if (d && d.v === SCHEMA && d.slots && typeof d.slots === 'object') return d;
+      if (d && d.v === SCHEMA && d.slots && typeof d.slots === 'object') {
+        if (!THEMES.includes(d.theme)) d.theme = 'auto';
+        return d;
+      }
     } catch (e) { /* χαλασμένο ή απαγορευμένο: ξεκινάμε καθαρά */ }
-    return { v: SCHEMA, sound: true, profile: null, slots: {} };
+    return { v: SCHEMA, sound: true, theme: 'auto', profile: null, slots: {} };
   },
   write(d) {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); return true; } catch (e) { return false; }
@@ -296,12 +340,15 @@ const Server = {
     if (!this.on || owner === 'local' || !slot) return;
     const res = await this.request('PUT', this.url(owner, i), { schema: SCHEMA, saved_at: slot.saved_at, data: slot.data });
     if (res && res.status === 204) { slot.dirty = false; Local.write(store); }
+    // 401: το hub ξέχασε το ξεκλείδωμα. Η θέση μένει «dirty» και την επόμενη φορά ζητάμε ξανά τον κωδικό.
+    if (res && res.status === 401) this.state = 'locked';
   },
 
   async pull(owner, i) {
     if (!this.on || owner === 'local' || this.state !== 'ok') return;
     const res = await this.request('GET', this.url(owner, i));
     if (!res) return;
+    if (res.status === 401) { this.state = 'locked'; return; }
     const local = slotsOf(owner)[i];
     if (res.status === 200) {
       const remote = await res.json().catch(() => null);
@@ -319,6 +366,7 @@ const Server = {
     for (const owner of Object.keys(store.slots)) {
       if (owner === 'local') continue;
       for (let i = 0; i < CONFIG.save.slots; i++) {
+        if (this.state !== 'ok') return;
         if (slotsOf(owner)[i] && slotsOf(owner)[i].dirty) await this.push(owner, i);
       }
     }
@@ -393,6 +441,29 @@ const Sound = {
     this.tone(notes[this.musicStep++ % notes.length], 0.35, 'sine', 0.05);
   },
 };
+
+/* =====================================================================================
+   ΧΡΩΜΑΤΑ (φωτεινό / σκοτεινό): 'auto' ακολουθεί τη συσκευή, το κουμπί 🌓 αλλάζει auto → light → dark.
+   ===================================================================================== */
+const Theme = {
+  mqDark: window.matchMedia('(prefers-color-scheme: dark)'),
+  icons: { auto: '🌓', light: '☀️', dark: '🌙' },
+  labels: { auto: 'Χρώματα: όπως η συσκευή', light: 'Χρώματα: φωτεινά', dark: 'Χρώματα: σκοτεινά' },
+
+  apply() {
+    const t = store.theme === 'auto' ? (this.mqDark.matches ? 'dark' : 'light') : store.theme;
+    document.documentElement.dataset.theme = t;
+    $('theme-btn').textContent = this.icons[store.theme];
+    $('theme-btn').setAttribute('aria-label', this.labels[store.theme]);
+  },
+
+  next() {
+    store.theme = THEMES[(THEMES.indexOf(store.theme) + 1) % THEMES.length];
+    Local.write(store);
+    this.apply();
+  },
+};
+Theme.mqDark.addEventListener('change', () => Theme.apply());
 
 /* =====================================================================================
    ΚΑΤΑΣΤΑΣΗ ΠΑΙΧΝΙΔΙΟΥ
@@ -553,6 +624,7 @@ window.addEventListener('online', () => { Server.refresh().then(() => Server.syn
 
 $('pause-btn').addEventListener('click', togglePause);
 $('sound-btn').addEventListener('click', () => Sound.setOn(!store.sound));
+$('theme-btn').addEventListener('click', () => Theme.next());
 $('full-btn').addEventListener('click', toggleFullscreen);
 $('play-btn').addEventListener('click', openSlots);
 $('slots-back').addEventListener('click', () => setScreen('title'));
@@ -602,6 +674,11 @@ function button(text, small, onClick, cls = 'big-btn alt slot') {
 }
 
 async function renderSlots() {
+  let owner = currentOwner();
+  if (owner !== 'local') {
+    for (let i = 0; i < CONFIG.save.slots; i++) await Server.pull(owner, i);
+    owner = currentOwner();    // ένα 401 κλειδώνει ξανά: δείχνουμε τον κωδικό και τις θέσεις της συσκευής
+  }
   $('server-box').hidden = !Server.on;
   $('unlock-box').hidden = Server.state !== 'locked';
   $('profile-box').hidden = Server.state !== 'ok';
@@ -616,10 +693,6 @@ async function renderSlots() {
         renderSlots();
       }, 'big-btn soft'));
     }
-  }
-  const owner = currentOwner();
-  if (owner !== 'local') {
-    for (let i = 0; i < CONFIG.save.slots; i++) await Server.pull(owner, i);
   }
   const slotList = $('slot-list');
   slotList.replaceChildren();
@@ -841,6 +914,7 @@ function frame() {
 }
 
 Sound.setOn(store.sound !== false);
+Theme.apply();
 setScreen('title');
 requestAnimationFrame(frame);
 </script>
