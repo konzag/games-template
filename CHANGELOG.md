@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Fixed
+- Template shell bugs found by the tests (GAMES-TEMPLATE-T1..T5): T1 the HUD (z-index 30) is above the screen
+  overlays, so ⏸ 🔊 🌓 ⛶ 🏠 can be clicked/tapped on title, slots, pause, win and lose; T2 at ≤ 520 px the HUD
+  buttons are 56 px and the status line wraps under them (fits 360 px); T3 in portrait on touch the rotate hint
+  covers the screen only while playing, on the menus it is a bottom strip that lets taps through; T4 light
+  palette for the shell and a 🌓 switch in the HUD (auto → light → dark), stored as `theme` in `game.<slug>.v1`
+  (schema stays 1, missing = `auto`); the canvas world keeps its colours; T5 a 401 from `/api/save` locks the
+  level B session again (save stays dirty, level A kept), so the slot screen asks for the family PIN.
+  The five `test.fail` marks are removed; a new test for the switch raises the floor 86 -> 88.
+
 ### Changed
 - README pass 02 (GAME-STANDARD v1.2 §2a): the README has the tester sections as a skeleton for every new game
   («Οθόνες και ροή», «Αποθήκευση», «Λίστα χειροκίνητων δοκιμών» AST-01..AST-21, «Τι άλλαξε στην τελευταία

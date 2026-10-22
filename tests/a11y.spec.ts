@@ -48,10 +48,9 @@ const SCREENS: { name: string; open: (page: Page, tap: boolean) => Promise<void>
   {
     // The template has no settings screen: the sound switch in the HUD is the only setting (muted state checked).
     name: 'sound off',
-    // Switched with M: on the title screen the HUD is under the screen overlay (APP BUG GAMES-TEMPLATE-T1).
-    open: async (page) => {
+    open: async (page, tap) => {
       await page.goto('/');
-      await page.keyboard.press('KeyM');
+      await tapOrClick(page, tap, '#sound-btn');
       await expect(page.locator('#sound-btn')).toHaveAttribute('aria-pressed', 'false');
     },
   },
