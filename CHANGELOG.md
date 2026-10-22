@@ -13,6 +13,13 @@
   The five `test.fail` marks are removed; a new test for the switch raises the floor 86 -> 88.
 
 ### Changed
+- **CI on every PR** (owner decision D21, rulesets with required checks): `.github/workflows/ci.yml` now runs on
+  `pull_request` into staging/main, on `push` to staging/main only (a PR branch commit runs CI once, not twice) and
+  on `workflow_dispatch`. Before, CI ran on push only, so a PR whose branch moved through GITHUB_TOKEN showed no
+  checks. Job ids / check names stay `test` and `gitleaks`.
+  - Tests: new `tests/ci-workflow.spec.ts` (file check, desktop project): triggers and branches, no paths filter,
+    workflow name `CI`, required jobs present, unconditioned and keeping their check names, no `${{ }}` inside a
+    `run:` script. Red on the old ci.yml. Test-count floor 88 → 94 (`tests/floors.json` + `.coverage-floor`).
 - README pass 02 (GAME-STANDARD v1.2 §2a): the README has the tester sections as a skeleton for every new game
   («Οθόνες και ροή», «Αποθήκευση», «Λίστα χειροκίνητων δοκιμών» AST-01..AST-21, «Τι άλλαξε στην τελευταία
   έκδοση», «Γνωστοί περιορισμοί», «Ασφαλής δοκιμή», «Αναφορά προβλήματος»), filled in for the Αστερόσκονη example.

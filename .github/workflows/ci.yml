@@ -1,11 +1,16 @@
 name: CI
 
-# Every push runs the Playwright tests (GAME-STANDARD §3a/§5/§7: smoke, axe, layout, saves), the test-count
-# ratchet (TEST-STANDARD v1 §R-JS) and a secret scan. Same conventions as the fleet:
-# push only (a PR shows the push run of its head commit), superseded runs cancelled, actions pinned by SHA,
-# read-only token, pinned and checksum-verified tools.
+# Every PR into staging/main and every push to staging/main runs the Playwright tests (GAME-STANDARD §3a/§5/§7:
+# smoke, axe, layout, saves), the test-count ratchet (TEST-STANDARD v1 §R-JS) and a secret scan. The ruleset
+# (owner decision D21) requires the checks `test` and `gitleaks` on PRs: keep those job ids/names
+# (tests/ci-workflow.spec.ts); a new game copies both. Push runs only on staging/main, so a PR branch commit runs
+# CI once. Same conventions as the fleet: superseded runs cancelled, actions pinned by SHA, read-only token, pinned
+# and checksum-verified tools.
 on:
+  pull_request:
+    branches: [staging, main]
   push:
+    branches: [staging, main]
   workflow_dispatch:
 
 concurrency:
