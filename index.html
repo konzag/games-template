@@ -378,9 +378,44 @@ function currentOwner() {
 }
 
 /* Αποθηκεύει την τρέχουσα πρόοδο: πρώτα στη συσκευή, μετά (αν γίνεται) στο hub. */
+/* =====================================================================================
+   ΠΡΟΟΔΟΣ ΓΙΑ ΤΟ HUB (GAME-STANDARD §5a): κάθε save έχει ένα αντικείμενο hub με ΜΟΝΟ
+   schema, completed, completedAt, milestones. Το hub το διαβάζει· το παιχνίδι δεν το καλεί.
+   ===================================================================================== */
+const HUB_MILESTONE = /^[a-z0-9-]{1,32}$/;
+const HUB_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const HUB_MAX_MILESTONES = 50;
+
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+// Παλιό ή χαλασμένο αντικείμενο: κρατάμε ό,τι είναι έγκυρο, τίποτα άλλο.
+function hubOf(raw) {
+  const r = raw && typeof raw === 'object' ? raw : {};
+  const completed = r.completed === true;
+  const list = Array.isArray(r.milestones) ? r.milestones : [];
+  return {
+    schema: 1,
+    completed,
+    completedAt: !completed ? null : HUB_DATE.test(r.completedAt) ? r.completedAt : today(),
+    milestones: [...new Set(list.filter((m) => typeof m === 'string' && HUB_MILESTONE.test(m)))].slice(0, HUB_MAX_MILESTONES),
+  };
+}
+
+function markCompleted() {
+  if (!G.hub.completed) { G.hub.completed = true; G.hub.completedAt = today(); }
+}
+
+function addMilestone(id) {
+  const list = G.hub.milestones;
+  if (HUB_MILESTONE.test(id) && !list.includes(id) && list.length < HUB_MAX_MILESTONES) list.push(id);
+}
+
 function saveGame() {
   if (G.slot < 0) return false;
-  const data = { stars: G.stars, wins: G.wins };
+  const data = { stars: G.stars, wins: G.wins, hub: G.hub };
   if (JSON.stringify(data).length > CONFIG.save.maxBytes) return false;
   slotsOf(G.owner)[G.slot] = { saved_at: Date.now(), data, dirty: G.owner !== 'local' };
   const ok = Local.write(store);
@@ -525,12 +560,23 @@ function startLevel() {
   setScreen('play');
 }
 
+function winGame() {
+  G.wins += 1;
+  G.stars = 0;
+  markCompleted();
+  saveGame();
+  Sound.win();
+  setScreen('win');
+}
+
 function startSlot(i) {
   G.owner = currentOwner();
   G.slot = i;
   const saved = slotsOf(G.owner)[i];
   G.stars = saved ? saved.data.stars | 0 : 0;
   G.wins = saved ? saved.data.wins | 0 : 0;
+  G.hub = hubOf(saved && saved.data.hub);
+  if (G.wins > 0) markCompleted();          // παλιό save που δείχνει ήδη νίκη (§5a)
   startLevel();
 }
 
@@ -782,11 +828,7 @@ function update(dt) {
     return false;
   });
   if (G.stars >= CONFIG.stars.toWin) {
-    G.wins += 1;
-    G.stars = 0;
-    saveGame();
-    Sound.win();
-    setScreen('win');
+    winGame();
     return;
   }
   if (G.starsOnField.length !== CONFIG.stars.onField) updateStatus();
