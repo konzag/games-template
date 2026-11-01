@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Added
+- GAME-STANDARD v1.3 (§5a): every save carries a `hub` object (`schema`, `completed`, `completedAt`, `milestones`, nothing
+  else). A win sets `completed` once; `addMilestone` writes only valid ids, at most 50; an old save loads and gets it at
+  the next save, marked completed if it already shows a win; a malformed object is cleaned on load. No new call, no new
+  script. `tests/hub-progress.spec.ts`.
+
 ### Fixed
 - Template shell bugs found by the tests (GAMES-TEMPLATE-T1..T5): T1 the HUD (z-index 30) is above the screen
   overlays, so ⏸ 🔊 🌓 ⛶ 🏠 can be clicked/tapped on title, slots, pause, win and lose; T2 at ≤ 520 px the HUD
