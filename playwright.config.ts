@@ -7,7 +7,8 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: process.env.CI ? [['list'], ['github']] : 'list',
-  use: { baseURL: 'http://127.0.0.1:4173', browserName: 'chromium' },
+  // L1-21: a Greek browser by default (tests/i18n.spec.ts sets other locales itself).
+  use: { baseURL: 'http://127.0.0.1:4173', browserName: 'chromium', locale: 'el-GR' },
   webServer: {
     command: 'node tests/serve.mjs',
     url: 'http://127.0.0.1:4173/',

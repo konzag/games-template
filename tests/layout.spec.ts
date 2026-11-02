@@ -36,10 +36,10 @@ async function measure(page: Page) {
 }
 
 /** Opens title, slots, play and pause with the keyboard and lists what is outside the viewport on each. */
-async function walkScreens(page: Page) {
+async function walkScreens(page: Page, path = '/') {
   const outside: string[] = [];
   const check = async (name: string) => outside.push(...(await measure(page)).map((m) => `${name}: ${m}`));
-  await page.goto('/');
+  await page.goto(path);
   await expect(page.locator('#title-screen')).toBeVisible();
   await check('title');
   await press(page, '#play-btn');
@@ -66,6 +66,14 @@ for (const scheme of ['light', 'dark'] as const) {
     });
   }
 }
+
+// L1-21: the English texts are longer than the Greek ones in places; the smallest screen must still fit them.
+test('fits 360x740 in English', async ({ page }) => {
+  const problems = await watch(page);
+  await page.setViewportSize({ width: 360, height: 740 });
+  expect(await walkScreens(page, '/?lang=en')).toEqual([]);
+  expect(problems).toEqual([]);
+});
 
 /** For each selector: is the element itself what a finger or mouse hits at its centre? */
 async function covered(page: Page, sels: string[]) {
