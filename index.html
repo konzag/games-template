@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Αστερόσκονη</title>
+<title data-i18n="page_title">Αστερόσκονη</title>
 <meta name="description" content="Αστερόσκονη: μάζεψε 10 αστέρια στο λιβάδι και κάνε τα σκιουλάκια σπίθες με τη λάμψη σου. Ένα παιχνίδι για παιδιά.">
 <meta name="robots" content="noindex,nofollow">
 <!-- Η γραμματοσειρά έρχεται από το hub (Comfortaa). Κανένα CDN, κανένα Google Fonts (GAME-STANDARD §4). -->
@@ -94,6 +94,17 @@ kbd { font-family: inherit; font-weight: 700; background: var(--soft); border-ra
   background: var(--field); padding: 0 14px; font-size: 24px; }
 .row .big-btn { width: auto; margin: 0; }
 #server-msg:empty { display: none; }
+#rotate b { font-weight: inherit; }
+/* Γλώσσα (L1-21): δύο κουμπιά EL | EN στον τίτλο, ≥ 64 px, το ενεργό γεμάτο. */
+.lang-switch { display: flex; justify-content: center; gap: 10px; margin-top: 16px; }
+.lang-btn { min-width: 72px; min-height: 64px; border-radius: 18px; font-size: 22px; font-weight: 700;
+  background: var(--soft); border: 2px solid var(--line); }
+.lang-btn[aria-pressed="true"] { background: var(--sun); border-color: var(--sun); color: #10202a; }
+/* 360x740: με τα EL | EN η κάρτα του τίτλου ξεπερνούσε την οθόνη κατά ~6 px· πιο σφιχτή κάρτα στη στενή οθόνη. */
+@media (max-width: 520px) {
+  .card { padding: 20px 16px; }
+  .lang-switch { margin-top: 10px; }
+}
 
 /* ===== Αφή: εικονικό joystick αριστερά, κουμπιά ικανοτήτων δεξιά (≥ 64 px) ===== */
 #touch { position: fixed; inset: auto 0 0 0; height: 46%; z-index: 5; pointer-events: none; display: none; }
@@ -130,16 +141,16 @@ body.touch[data-screen="play"] #touch { display: block; }
 </style>
 </head>
 <body data-screen="title">
-<canvas id="game" aria-label="Ο κόσμος του παιχνιδιού"></canvas>
+<canvas id="game" aria-label="Ο κόσμος του παιχνιδιού" data-i18n-attr="aria-label:world"></canvas>
 
 <div id="hud">
   <div id="status" role="status" aria-live="polite"></div>
   <div id="bar">
-    <button class="icon-btn" id="pause-btn" aria-label="Παύση (P)">⏸</button>
-    <button class="icon-btn" id="sound-btn" aria-label="Ήχος (M)" aria-pressed="true">🔊</button>
+    <button class="icon-btn" id="pause-btn" aria-label="Παύση (P)" data-i18n-attr="aria-label:pause_btn">⏸</button>
+    <button class="icon-btn" id="sound-btn" aria-label="Ήχος (M)" data-i18n-attr="aria-label:sound_btn" aria-pressed="true">🔊</button>
     <button class="icon-btn" id="theme-btn" aria-label="Χρώματα: όπως η συσκευή">🌓</button>
-    <button class="icon-btn" id="full-btn" aria-label="Πλήρης οθόνη (F)">⛶</button>
-    <a class="icon-btn btn" id="home-btn" href="/" aria-label="Πίσω στα παιχνίδια">🏠</a>
+    <button class="icon-btn" id="full-btn" aria-label="Πλήρης οθόνη (F)" data-i18n-attr="aria-label:full_btn">⛶</button>
+    <a class="icon-btn btn" id="home-btn" href="/" aria-label="Πίσω στα παιχνίδια" data-i18n-attr="aria-label:home_btn">🏠</a>
   </div>
 </div>
 
@@ -156,72 +167,77 @@ body.touch[data-screen="play"] #touch { display: block; }
 
 <section class="screen" id="title-screen">
   <div class="card">
-    <h1>⭐ Αστερόσκονη</h1>
-    <p>Μάζεψε αστέρια και κάνε τα σκιουλάκια σπίθες!</p>
-    <button class="big-btn" id="play-btn">Παίζουμε! ✨</button>
+    <h1 data-i18n="title">⭐ Αστερόσκονη</h1>
+    <p data-i18n="tagline">Μάζεψε αστέρια και κάνε τα σκιουλάκια σπίθες!</p>
+    <button class="big-btn" id="play-btn" data-i18n="play">Παίζουμε! ✨</button>
     <div class="keys">
-      <kbd>← ↑ → ↓ / WASD</kbd><span>κίνηση</span>
-      <kbd>1 2 3 4</kbd><span>λάμψη, τρέξιμο, ασπίδα, μαγνήτης</span>
-      <kbd>Space</kbd><span>ουράνιο τόξο</span>
-      <kbd>P / Esc</kbd><span>παύση</span>
-      <kbd>M · F</kbd><span>ήχος · πλήρης οθόνη</span>
+      <kbd>← ↑ → ↓ / WASD</kbd><span data-i18n="k_move">κίνηση</span>
+      <kbd>1 2 3 4</kbd><span data-i18n="k_abilities">λάμψη, τρέξιμο, ασπίδα, μαγνήτης</span>
+      <kbd>Space</kbd><span data-i18n="k_special">ουράνιο τόξο</span>
+      <kbd>P / Esc</kbd><span data-i18n="k_pause">παύση</span>
+      <kbd>M · F</kbd><span data-i18n="k_sound_full">ήχος · πλήρης οθόνη</span>
+    </div>
+    <!-- Γλώσσα (L1-21, απόφαση L3-06): ελληνικά από προεπιλογή, αγγλικά από το EN. Κάθε γλώσσα με το δικό της όνομα. -->
+    <div class="lang-switch" role="group" aria-label="Γλώσσα" data-i18n-attr="aria-label:lang_group">
+      <button class="lang-btn" id="lang-el" data-lang="el" lang="el" title="Ελληνικά" aria-pressed="true">EL</button>
+      <button class="lang-btn" id="lang-en" data-lang="en" lang="en" title="English" aria-pressed="false">EN</button>
     </div>
   </div>
 </section>
 
 <section class="screen" id="slots-screen" hidden>
   <div class="card">
-    <h2>Ποια θέση;</h2>
+    <h2 data-i18n="slots_title">Ποια θέση;</h2>
     <div id="server-box" hidden>
       <div id="unlock-box">
-        <p>Οικογενειακός κωδικός για αποθήκευση στο σπίτι:</p>
+        <p data-i18n="pin_intro">Οικογενειακός κωδικός για αποθήκευση στο σπίτι:</p>
         <div class="row">
-          <input id="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="Κωδικός (4 ψηφία)">
-          <button class="big-btn" id="unlock-btn">Άνοιγμα</button>
+          <input id="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="Κωδικός (4 ψηφία)" data-i18n-attr="aria-label:pin_label">
+          <button class="big-btn" id="unlock-btn" data-i18n="unlock">Άνοιγμα</button>
         </div>
       </div>
       <div id="profile-box" hidden>
-        <p>Ποιος παίζει;</p>
+        <p data-i18n="who">Ποιος παίζει;</p>
         <div id="profile-list"></div>
         <div class="row">
-          <input id="new-profile" maxlength="20" autocomplete="off" aria-label="Όνομα νέου προφίλ">
-          <button class="big-btn alt" id="add-profile">Νέο</button>
+          <input id="new-profile" maxlength="20" autocomplete="off" aria-label="Όνομα νέου προφίλ" data-i18n-attr="aria-label:new_profile_label">
+          <button class="big-btn alt" id="add-profile" data-i18n="new_profile">Νέο</button>
         </div>
       </div>
       <p id="server-msg" role="status"></p>
     </div>
     <div id="slot-list"></div>
-    <button class="big-btn soft" id="slots-back">Πίσω</button>
+    <button class="big-btn soft" id="slots-back" data-i18n="back">Πίσω</button>
   </div>
 </section>
 
 <section class="screen" id="pause-screen" hidden>
   <div class="card">
-    <h2>⏸ Παύση</h2>
-    <button class="big-btn" id="resume-btn">Συνέχεια ▶</button>
-    <button class="big-btn alt" id="save-btn">Αποθήκευση 💾</button>
+    <h2 data-i18n="pause_title">⏸ Παύση</h2>
+    <button class="big-btn" id="resume-btn" data-i18n="resume">Συνέχεια ▶</button>
+    <button class="big-btn alt" id="save-btn" data-i18n="save">Αποθήκευση 💾</button>
     <p id="save-msg" role="status"></p>
-    <button class="big-btn soft" id="quit-btn">Στον τίτλο</button>
+    <button class="big-btn soft" id="quit-btn" data-i18n="quit">Στον τίτλο</button>
   </div>
 </section>
 
 <section class="screen" id="win-screen" hidden>
   <div class="card">
-    <h2>🎉 Τα κατάφερες!</h2>
-    <p>Μάζεψες όλα τα αστέρια.</p>
-    <button class="big-btn" id="again-btn">Ξανά! ⭐</button>
+    <h2 data-i18n="win_title">🎉 Τα κατάφερες!</h2>
+    <p data-i18n="win_text">Μάζεψες όλα τα αστέρια.</p>
+    <button class="big-btn" id="again-btn" data-i18n="again">Ξανά! ⭐</button>
   </div>
 </section>
 
 <section class="screen" id="lose-screen" hidden>
   <div class="card">
-    <h2>😴 Κουράστηκες λίγο</h2>
-    <p>Τα αστέρια σου τα κρατάς. Πάμε πάλι από την αρχή του λιβαδιού!</p>
-    <button class="big-btn" id="retry-btn">Ξανά ▶</button>
+    <h2 data-i18n="lose_title">😴 Κουράστηκες λίγο</h2>
+    <p data-i18n="lose_text">Τα αστέρια σου τα κρατάς. Πάμε πάλι από την αρχή του λιβαδιού!</p>
+    <button class="big-btn" id="retry-btn" data-i18n="retry">Ξανά ▶</button>
   </div>
 </section>
 
-<div id="rotate"><div><span>🔄</span>Γύρισε τη συσκευή οριζόντια</div></div>
+<div id="rotate"><div><span>🔄</span><b data-i18n="rotate">Γύρισε τη συσκευή οριζόντια</b></div></div>
 
 <script>
 'use strict';
@@ -247,6 +263,162 @@ const CONFIG = Object.freeze({
     maxBytes: 65536,
   },
 });
+
+
+/* =====================================================================================
+   ΓΛΩΣΣΑ (L1-21, απόφαση ιδιοκτήτη L3-06): ελληνικά από προεπιλογή, αγγλικά με το EN.
+   Σειρά: ?lang=el|en (και τη θυμάται) > η επιλογή στη συσκευή (games.lang, κοινή για όλα τα παιχνίδια του hub,
+   και cookie lang) > el. Ποτέ από τη γλώσσα του browser ή της συσκευής (απόφαση W1 02/11, ο κανόνας της 23/10).
+   Τα κείμενα: το data-i18n δίνει το κλειδί του κειμένου, το data-i18n-attr των ιδιοτήτων (π.χ. aria-label), tr() στον κώδικα.
+   Οι δύο κατάλογοι είναι αυστηρό JSON ανάμεσα στους δείκτες: το tests/i18n.spec.ts τους διαβάζει και
+   αποτυγχάνει αν ένα κλειδί ή ένα {placeholder} λείπει από τη μία γλώσσα. Η γλώσσα ΔΕΝ μπαίνει στο game.<slug>.v1.
+   ===================================================================================== */
+const STRINGS = /*I18N-CATALOGS*/{
+  "el": {
+    "page_title": "Αστερόσκονη",
+    "world": "Ο κόσμος του παιχνιδιού",
+    "pause_btn": "Παύση (P)",
+    "sound_btn": "Ήχος (M)",
+    "full_btn": "Πλήρης οθόνη (F)",
+    "home_btn": "Πίσω στα παιχνίδια",
+    "theme_auto": "Χρώματα: όπως η συσκευή",
+    "theme_light": "Χρώματα: φωτεινά",
+    "theme_dark": "Χρώματα: σκοτεινά",
+    "lang_group": "Γλώσσα",
+    "title": "⭐ Αστερόσκονη",
+    "tagline": "Μάζεψε αστέρια και κάνε τα σκιουλάκια σπίθες!",
+    "play": "Παίζουμε! ✨",
+    "k_move": "κίνηση",
+    "k_abilities": "λάμψη, τρέξιμο, ασπίδα, μαγνήτης",
+    "k_special": "ουράνιο τόξο",
+    "k_pause": "παύση",
+    "k_sound_full": "ήχος · πλήρης οθόνη",
+    "slots_title": "Ποια θέση;",
+    "pin_intro": "Οικογενειακός κωδικός για αποθήκευση στο σπίτι:",
+    "pin_label": "Κωδικός (4 ψηφία)",
+    "unlock": "Άνοιγμα",
+    "who": "Ποιος παίζει;",
+    "new_profile_label": "Όνομα νέου προφίλ",
+    "new_profile": "Νέο",
+    "back": "Πίσω",
+    "pause_title": "⏸ Παύση",
+    "resume": "Συνέχεια ▶",
+    "save": "Αποθήκευση 💾",
+    "quit": "Στον τίτλο",
+    "win_title": "🎉 Τα κατάφερες!",
+    "win_text": "Μάζεψες όλα τα αστέρια.",
+    "again": "Ξανά! ⭐",
+    "lose_title": "😴 Κουράστηκες λίγο",
+    "lose_text": "Τα αστέρια σου τα κρατάς. Πάμε πάλι από την αρχή του λιβαδιού!",
+    "retry": "Ξανά ▶",
+    "rotate": "Γύρισε τη συσκευή οριζόντια",
+    "saved": "Αποθηκεύτηκε ✔",
+    "not_saved": "Δεν έγινε αποθήκευση σε αυτή τη συσκευή",
+    "pin_wrong": "Λάθος κωδικός",
+    "pin_wait": "Περίμενε λίγο και ξαναδοκίμασε",
+    "home_off": "Το σπίτι δεν απαντά: αποθήκευση μόνο εδώ",
+    "profile_failed": "Δεν έγινε. Δοκίμασε άλλο όνομα.",
+    "slot": "Θέση {n}",
+    "slot_empty": "κενή"
+  },
+  "en": {
+    "page_title": "Stardust",
+    "world": "The game world",
+    "pause_btn": "Pause (P)",
+    "sound_btn": "Sound (M)",
+    "full_btn": "Full screen (F)",
+    "home_btn": "Back to the games",
+    "theme_auto": "Colours: like the device",
+    "theme_light": "Colours: light",
+    "theme_dark": "Colours: dark",
+    "lang_group": "Language",
+    "title": "⭐ Stardust",
+    "tagline": "Collect stars and turn the little shadows into sparks!",
+    "play": "Let's play! ✨",
+    "k_move": "move",
+    "k_abilities": "glow, run, shield, magnet",
+    "k_special": "rainbow",
+    "k_pause": "pause",
+    "k_sound_full": "sound · full screen",
+    "slots_title": "Which slot?",
+    "pin_intro": "Family code to save at home:",
+    "pin_label": "Code (4 digits)",
+    "unlock": "Unlock",
+    "who": "Who is playing?",
+    "new_profile_label": "Name of the new profile",
+    "new_profile": "New",
+    "back": "Back",
+    "pause_title": "⏸ Paused",
+    "resume": "Continue ▶",
+    "save": "Save 💾",
+    "quit": "To the title",
+    "win_title": "🎉 You did it!",
+    "win_text": "You collected all the stars.",
+    "again": "Again! ⭐",
+    "lose_title": "😴 A little tired",
+    "lose_text": "You keep your stars. Let's go again from the start of the meadow!",
+    "retry": "Again ▶",
+    "rotate": "Turn the device sideways",
+    "saved": "Saved ✔",
+    "not_saved": "Could not save on this device",
+    "pin_wrong": "Wrong code",
+    "pin_wait": "Wait a little and try again",
+    "home_off": "Home is not answering: saving only here",
+    "profile_failed": "That did not work. Try another name.",
+    "slot": "Slot {n}",
+    "slot_empty": "empty"
+  }
+}/*/I18N-CATALOGS*/;
+const LANGS = ['el', 'en'];
+const LANG_KEY = 'games.lang';
+
+function normLang(v) {
+  const p = typeof v === 'string' ? v.trim().toLowerCase().replace('_', '-').split('-')[0] : '';
+  return LANGS.includes(p) ? p : null;
+}
+
+const I18n = {
+  lang: 'el',
+
+  init() {
+    const query = normLang(new URLSearchParams(location.search).get('lang'));
+    const cookie = (document.cookie.match(/(?:^|;\s*)lang=([^;]*)/) || [])[1];
+    this.lang = query || normLang(Local.readLang()) || normLang(cookie) || 'el';
+    if (query) Local.writeLang(query);   // ένας σύνδεσμος ?lang=en αλλάζει τη γλώσσα και τη θυμάται
+    this.apply();
+  },
+
+  t(key, vars) {
+    const table = STRINGS[this.lang];
+    const text = key in table ? table[key] : key in STRINGS.el ? STRINGS.el[key] : key;
+    return text.replace(/\{([a-z_]+)\}/g, (m, k) => (vars && k in vars ? String(vars[k]) : m));
+  },
+
+  apply() {
+    document.documentElement.lang = this.lang;
+    for (const el of document.querySelectorAll('[data-i18n]')) el.textContent = this.t(el.dataset.i18n);
+    for (const el of document.querySelectorAll('[data-i18n-attr]')) {
+      for (const pair of el.dataset.i18nAttr.split(/\s+/)) {
+        const [attr, key] = pair.split(':');
+        if (attr && key) el.setAttribute(attr, this.t(key));
+      }
+    }
+    for (const b of document.querySelectorAll('.lang-switch [data-lang]')) {
+      b.setAttribute('aria-pressed', String(b.dataset.lang === this.lang));
+    }
+  },
+
+  set(lang) {
+    const next = normLang(lang);
+    if (!next) return;
+    this.lang = next;
+    Local.writeLang(next);
+    this.apply();
+    Theme.apply();                     // οι ετικέτες που φτιάχνει ο κώδικας
+    if (G.screen === 'slots') renderSlots();
+  },
+};
+const tr = (key, vars) => I18n.t(key, vars);
 
 const $ = (id) => document.getElementById(id);
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -275,6 +447,14 @@ const Local = {
   },
   write(d) {
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(d)); return true; } catch (e) { return false; }
+  },
+  readLang() {
+    try { return localStorage.getItem(LANG_KEY); } catch (e) { return null; }
+  },
+  writeLang(lang) {
+    try { localStorage.setItem(LANG_KEY, lang); } catch (e) { /* απαγορευμένο: μένει το cookie */ }
+    const secure = location.protocol === 'https:' ? '; Secure' : '';
+    document.cookie = `lang=${lang}; Path=/; Max-Age=31536000; SameSite=Lax${secure}`;
   },
 };
 
@@ -485,13 +665,12 @@ const Sound = {
 const Theme = {
   mqDark: window.matchMedia('(prefers-color-scheme: dark)'),
   icons: { auto: '🌓', light: '☀️', dark: '🌙' },
-  labels: { auto: 'Χρώματα: όπως η συσκευή', light: 'Χρώματα: φωτεινά', dark: 'Χρώματα: σκοτεινά' },
 
   apply() {
     const t = store.theme === 'auto' ? (this.mqDark.matches ? 'dark' : 'light') : store.theme;
     document.documentElement.dataset.theme = t;
     $('theme-btn').textContent = this.icons[store.theme];
-    $('theme-btn').setAttribute('aria-label', this.labels[store.theme]);
+    $('theme-btn').setAttribute('aria-label', tr(`theme_${store.theme}`));
   },
 
   next() {
@@ -674,11 +853,12 @@ $('pause-btn').addEventListener('click', togglePause);
 $('sound-btn').addEventListener('click', () => Sound.setOn(!store.sound));
 $('theme-btn').addEventListener('click', () => Theme.next());
 $('full-btn').addEventListener('click', toggleFullscreen);
+for (const b of document.querySelectorAll('.lang-switch [data-lang]')) b.addEventListener('click', () => I18n.set(b.dataset.lang));
 $('play-btn').addEventListener('click', openSlots);
 $('slots-back').addEventListener('click', () => setScreen('title'));
 $('resume-btn').addEventListener('click', () => setScreen('play'));
 $('save-btn').addEventListener('click', () => {
-  $('save-msg').textContent = saveGame() ? 'Αποθηκεύτηκε ✔' : 'Δεν έγινε αποθήκευση σε αυτή τη συσκευή';
+  $('save-msg').textContent = saveGame() ? tr('saved') : tr('not_saved');
 });
 $('quit-btn').addEventListener('click', () => { saveGame(); G.slot = -1; setScreen('title'); });
 $('again-btn').addEventListener('click', () => { G.stars = 0; saveGame(); startLevel(); });
@@ -687,7 +867,7 @@ $('unlock-btn').addEventListener('click', async () => {
   const pin = $('pin').value;
   $('pin').value = '';
   const r = /^[0-9]{4}$/.test(pin) ? await Server.unlock(pin) : 'wrong';
-  $('server-msg').textContent = { ok: '', wrong: 'Λάθος κωδικός', wait: 'Περίμενε λίγο και ξαναδοκίμασε', off: 'Το σπίτι δεν απαντά: αποθήκευση μόνο εδώ' }[r];
+  $('server-msg').textContent = { ok: '', wrong: tr('pin_wrong'), wait: tr('pin_wait'), off: tr('home_off') }[r];
   if (r === 'ok') await Server.syncPending();
   renderSlots();
 });
@@ -695,7 +875,7 @@ $('add-profile').addEventListener('click', async () => {
   const name = $('new-profile').value.trim();
   if (!name) return;
   $('new-profile').value = '';
-  if (!(await Server.addProfile(name))) $('server-msg').textContent = 'Δεν έγινε. Δοκίμασε άλλο όνομα.';
+  if (!(await Server.addProfile(name))) $('server-msg').textContent = tr('profile_failed');
   renderSlots();
 });
 
@@ -704,7 +884,7 @@ async function openSlots() {
   $('server-msg').textContent = '';
   await Server.refresh();
   if (Server.state === 'ok') await Server.syncPending();
-  if (Server.state === 'off' && Server.on) $('server-msg').textContent = 'Το σπίτι δεν απαντά: αποθήκευση μόνο εδώ';
+  if (Server.state === 'off' && Server.on) $('server-msg').textContent = tr('home_off');
   renderSlots();
 }
 
@@ -745,8 +925,8 @@ async function renderSlots() {
   const slotList = $('slot-list');
   slotList.replaceChildren();
   slotsOf(owner).forEach((s, i) => {
-    const info = s ? `⭐ ${s.data.stars | 0} · 🏆 ${s.data.wins | 0}` : 'κενή';
-    slotList.append(button(`Θέση ${i + 1}`, info, () => startSlot(i)));
+    const info = s ? `⭐ ${s.data.stars | 0} · 🏆 ${s.data.wins | 0}` : tr('slot_empty');
+    slotList.append(button(tr('slot', { n: i + 1 }), info, () => startSlot(i)));
   });
 }
 
@@ -957,6 +1137,7 @@ function frame() {
   requestAnimationFrame(frame);
 }
 
+I18n.init();
 Sound.setOn(store.sound !== false);
 Theme.apply();
 setScreen('title');
