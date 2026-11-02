@@ -1,8 +1,8 @@
 // L1-21 / L3-06 (owner decision 2026-11-02): every game in Greek (default) and English, with an EL | EN switcher
 // on the title screen. File checks (desktop project only): both catalogs have the same keys and {placeholders},
 // every data-i18n key exists and every key is used, the built-in texts are the Greek ones. Browser checks (both
-// projects): German browser -> Greek, English browser -> English without storing it, a stored choice beats the
-// browser, ?lang= wins and is remembered, the switcher changes <html lang>, every text and the dynamic labels,
+// projects): German and English browsers -> Greek (the browser language is never used, W1 decision 2026-11-02),
+// a stored English choice -> English, ?lang= wins and is remembered, the switcher changes <html lang>, every text and the dynamic labels,
 // survives a reload, keeps game.<slug>.v1 untouched, works with blocked storage; axe clean in English.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
@@ -90,15 +90,15 @@ test.describe('German browser', () => {
 
 test.describe('English browser', () => {
   test.use({ locale: 'en-US' });
-  test('opens in English without storing the browser language', async ({ page }) => {
-    await page.goto('/');
-    await expectLang(page, 'en');
-    expect(await page.evaluate((k) => localStorage.getItem(k), LANG_KEY)).toBeNull();
-  });
-  test('a stored Greek choice beats the browser', async ({ page }) => {
-    await page.addInitScript((k) => localStorage.setItem(k, 'el'), LANG_KEY);
+  test('still opens in Greek: the browser language is never used, nothing is stored', async ({ page }) => {
     await page.goto('/');
     await expectLang(page, 'el');
+    expect(await page.evaluate((k) => localStorage.getItem(k), LANG_KEY)).toBeNull();
+  });
+  test('a stored English choice opens in English', async ({ page }) => {
+    await page.addInitScript((k) => localStorage.setItem(k, 'en'), LANG_KEY);
+    await page.goto('/');
+    await expectLang(page, 'en');
   });
 });
 

@@ -263,7 +263,7 @@ const CONFIG = Object.freeze({
 /* =====================================================================================
    ΓΛΩΣΣΑ (L1-21, απόφαση ιδιοκτήτη L3-06): ελληνικά από προεπιλογή, αγγλικά με το EN.
    Σειρά: ?lang=el|en (και τη θυμάται) > η επιλογή στη συσκευή (games.lang, κοινή για όλα τα παιχνίδια του hub,
-   και cookie lang) > η γλώσσα του browser (navigator.languages, η πρώτη από el/en) > el.
+   και cookie lang) > el. Ποτέ από τη γλώσσα του browser ή της συσκευής (απόφαση W1 02/11, ο κανόνας της 23/10).
    Τα κείμενα: το data-i18n δίνει το κλειδί του κειμένου, το data-i18n-attr των ιδιοτήτων (π.χ. aria-label), tr() στον κώδικα.
    Οι δύο κατάλογοι είναι αυστηρό JSON ανάμεσα στους δείκτες: το tests/i18n.spec.ts τους διαβάζει και
    αποτυγχάνει αν ένα κλειδί ή ένα {placeholder} λείπει από τη μία γλώσσα. Η γλώσσα ΔΕΝ μπαίνει στο game.<slug>.v1.
@@ -378,8 +378,7 @@ const I18n = {
   init() {
     const query = normLang(new URLSearchParams(location.search).get('lang'));
     const cookie = (document.cookie.match(/(?:^|;\s*)lang=([^;]*)/) || [])[1];
-    const browser = (navigator.languages || [navigator.language]).map(normLang).find(Boolean);
-    this.lang = query || normLang(Local.readLang()) || normLang(cookie) || browser || 'el';
+    this.lang = query || normLang(Local.readLang()) || normLang(cookie) || 'el';
     if (query) Local.writeLang(query);   // ένας σύνδεσμος ?lang=en αλλάζει τη γλώσσα και τη θυμάται
     this.apply();
   },
