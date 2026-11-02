@@ -3,6 +3,13 @@
 ## [Unreleased]
 
 ### Added
+- Two languages, Greek (default) and English (L1-21, owner decision L3-06): «EL | EN» on the title screen (64 px),
+  catalogs `STRINGS.el` / `STRINGS.en` (strict JSON between `/*I18N-CATALOGS*/` markers) in the one inline script,
+  `data-i18n` / `data-i18n-attr` in the markup (Greek built-in), `tr()` for the texts the code makes. Order:
+  `?lang=` (remembered) > `games.lang` + cookie `lang` (shared by every game of the hub, not in `game.<slug>.v1`) >
+  `navigator.languages` > el; `<html lang>` follows. `tests/i18n.spec.ts` (22 listed: key/placeholder parity,
+  every key used, Greek built-in texts, resolution, switcher + reload + cookie, blocked storage, 64 px at 360 px,
+  axe in English light/dark); Playwright runs with `locale: 'el-GR'`. Test-count floor 112 -> 134. AST-22.
 - GAME-STANDARD v1.3 (§5a): every save carries a `hub` object (`schema`, `completed`, `completedAt`, `milestones`, nothing
   else). A win sets `completed` once; `addMilestone` writes only valid ids, at most 50; an old save loads and gets it at
   the next save, marked completed if it already shows a win; a malformed object is cleaned on load. No new call, no new
