@@ -42,7 +42,11 @@ jobs:
       - name: Install
         run: npm ci
       - name: Install Chromium
-        run: npx playwright install --with-deps chromium
+        # OS packages: preinstalled on the homelab runner (homelab-scripts vm/runner/ci-packages.txt),
+        # no apt there; only GitHub-hosted runners install them.
+        run: |
+          npx playwright install chromium
+          if [ "$RUNNER_ENVIRONMENT" = "github-hosted" ]; then npx playwright install-deps chromium; fi
       - name: Test count >= floor (tests/floors.json)
         run: npm run test:count
       - name: Playwright (smoke, axe light/dark, layout 4 sizes, level B errors; hub CSP)
