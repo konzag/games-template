@@ -100,6 +100,11 @@ kbd { font-family: inherit; font-weight: 700; background: var(--soft); border-ra
 .lang-btn { min-width: 72px; min-height: 64px; border-radius: 18px; font-size: 22px; font-weight: 700;
   background: var(--soft); border: 2px solid var(--line); }
 .lang-btn[aria-pressed="true"] { background: var(--sun); border-color: var(--sun); color: #10202a; }
+/* 360x740: με τα EL | EN η κάρτα του τίτλου ξεπερνούσε την οθόνη κατά ~6 px· πιο σφιχτή κάρτα στη στενή οθόνη. */
+@media (max-width: 520px) {
+  .card { padding: 20px 16px; }
+  .lang-switch { margin-top: 10px; }
+}
 
 /* ===== Αφή: εικονικό joystick αριστερά, κουμπιά ικανοτήτων δεξιά (≥ 64 px) ===== */
 #touch { position: fixed; inset: auto 0 0 0; height: 46%; z-index: 5; pointer-events: none; display: none; }
