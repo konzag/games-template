@@ -69,7 +69,7 @@ saves). The hub's own database, session, headers, health and metrics are in the 
 | rate limiting/abuse | yes | yes | tests/smoke.spec.ts «level B: 429 lockout shows a wait message» | PR CI | |
 | security configuration | yes | yes | tests/hub-csp.mjs + tests/hub-csp.spec.ts (the hub's CSP), tests/smoke.spec.ts §4; CI job `gitleaks` | PR CI | |
 | dependency scans | yes | partial | .github/dependabot.yml | weekly (Dependabot) | No `npm audit` / OSV step in CI |
-| SAST/DAST | yes | missing | | PR CI (SAST); weekly from the runner (ZAP, to add) | No Semgrep/CodeQL job; no ZAP baseline |
+| SAST/DAST | yes | partial | `CI / Semgrep SAST` (semgrep --config auto --error, pinned, GitHub-hosted); tests/sast.spec.ts keeps the job | PR CI | No ZAP baseline against staging (L1-19, weekly tier) |
 | penetration | no (manual) | | | | Manual only |
 | privacy | yes | partial | tests/smoke.spec.ts §4 (no external URLs), tests/readme.spec.ts (no hostnames / private IPs) | PR CI | No test that the PIN is never stored, logged or put in a URL (kryfes-maches has one) |
 | database | no | | | | No server DB in a game (saves are stored by games-hub) |
@@ -90,7 +90,7 @@ saves). The hub's own database, session, headers, health and metrics are in the 
 | deployment/rollback | infra: homelab-scripts | | | | Release = games-hub submodule SHA |
 | configuration | yes | partial | tests/smoke.spec.ts (level B on via the fake hub; hub unreachable) | PR CI | No test with `CONFIG.save.server` true while the hub answers 503 (saves off for the slug) |
 | observability | no | | | | Static page: health, metrics and X-Request-ID are games-hub's |
-| SEO | yes | missing | | | A new game is a public page: `lang="el"` and `<title>` exist, no meta description and no test |
+| SEO | yes | yes | tests/seo.spec.ts (lang="el", title, one Greek meta description of 50-160 characters, robots noindex,nofollow like the hub pages) | PR CI | kids' pages are never indexed (hub policy); the hub also sends X-Robots-Tag |
 | analytics | no | | | | Policy: no analytics; tests/smoke.spec.ts §4 proves no external URL loads |
 | exploratory | no (manual) | | | | Needs a person |
 | ad hoc | no (manual) | | | | Needs a person |
@@ -120,9 +120,9 @@ saves). The hub's own database, session, headers, health and metrics are in the 
 20. frontend performance (missing): Lighthouse CI budgets for `/<slug>/`.
 21. input security (partial): a profile name with markup stays plain text.
 22. dependency scans (partial): `npm audit` / OSV step in CI.
-23. SAST/DAST (missing): Semgrep (or CodeQL) on PRs; ZAP baseline against staging weekly.
+23. SAST/DAST (partial): Semgrep runs on every PR since L1-20; ZAP baseline against staging weekly (L1-19).
 24. privacy (partial): the PIN is never stored, logged or sent in a URL.
 25. idempotency (missing): a retried save leaves one unchanged slot.
 26. configuration (partial): level B on while the hub answers 503: no PIN box, saves on the device.
-27. SEO (missing): meta description + a test of title, lang and description.
+27. SEO: done in L1-20 (tests/seo.spec.ts).
 28. compatibility (partial): a fixture save from the previous release that loads unchanged.
