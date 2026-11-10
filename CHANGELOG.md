@@ -3,6 +3,9 @@
 ## [Unreleased]
 
 ### Added
+- CodeQL (NIGHT-2 item 3, 2026-11-10): `.github/workflows/codeql.yml` (javascript-typescript, which reads the inline
+  script of index.html, and actions; buildless, security-extended, GitHub-hosted, actions pinned by SHA) next to
+  Semgrep + Gitleaks in ci.yml, so every game made from the template starts with it; `tests/codeql-workflow.spec.ts`.
 - Two languages, Greek (default) and English (L1-21, owner decision L3-06): «EL | EN» on the title screen (64 px),
   catalogs `STRINGS.el` / `STRINGS.en` (strict JSON between `/*I18N-CATALOGS*/` markers) in the one inline script,
   `data-i18n` / `data-i18n-attr` in the markup (Greek built-in), `tr()` for the texts the code makes. Order:
