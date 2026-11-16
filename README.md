@@ -176,8 +176,13 @@ npm run serve                # http://127.0.0.1:4173/ για δοκιμή στο
 μπλοκάρει το hub σπάει και εδώ. Το `tests/readme.spec.ts` αποτυγχάνει αν λείψει μια ενότητα του README, αν τα
 ID δοκιμών δεν είναι μοναδικά και αριθμημένα, αν λείπει issue template ή αν το README γράψει hostname/IP.
 
+Έλεγχος K9 (job `k9` στο CI): `node --test tools/k9-check.test.mjs` και `node tools/k9-check.mjs`. Αποτυγχάνει αν
+λείπει κάτι από τα υποχρεωτικά (unit tests, Playwright, axe 2.2, visual baseline, όριο δοκιμών, EL+EN, οδηγός
+δοκιμής στο README). Ένα κενό που ακόμη υπάρχει γράφεται στο `k9-allowlist.json` με τον λόγο (μόνο προειδοποίηση).
+
 ## Κανόνες (σύντομα)
 
 Ένα `<script>`, χωρίς `eval`, χωρίς `onclick="…"`, κανένα CDN ή Google Fonts, κανένα δίκτυο εκτός από το save
 API. Η γραμματοσειρά (Comfortaa) έρχεται από το hub (`/static/fonts/comfortaa.css`). Χωρίς προσωπικά δεδομένα,
-διαφημίσεις ή αγορές. Όλα είναι στο [GAME-STANDARD.md](GAME-STANDARD.md).
+διαφημίσεις ή αγορές. Offline: το παιχνίδι παίζει χωρίς δίκτυο μέσω του service worker του hub (games-hub ADR-0008)·
+κανένας δικός του service worker ή manifest (`tests/offline.spec.ts`). Όλα είναι στο [GAME-STANDARD.md](GAME-STANDARD.md).

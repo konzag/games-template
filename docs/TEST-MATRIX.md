@@ -82,7 +82,7 @@ saves). The hub's own database, session, headers, health and metrics are in the 
 | idempotency | yes | missing | | PR CI (to add) | No test that a retried save (after offline / 401) leaves one unchanged slot |
 | error handling | yes | yes | tests/smoke.spec.ts (0 console errors, hub unreachable, 401/429/413) | PR CI | |
 | network | infra: homelab-scripts | | | | App part (hub unreachable never shows an error) is in row error handling |
-| offline/PWA | no | | | | No service worker (owner rule; GAMES-OFFLINE dropped 29/10) |
+| offline/PWA | yes (in the hub) | yes | tests/offline.spec.ts (no own service worker or manifest, every loaded file same-origin); games-hub e2e/offline.spec.ts (each game starts and plays offline through the hub's worker) | PR CI | The hub's one service worker serves the game offline since 2026-11-16 (games-hub ADR-0008); a game never ships its own |
 | resilience/failover | infra: homelab-scripts | | | | App part: hub down = level A saves (tests/smoke.spec.ts «hub unreachable…») |
 | recovery/disaster recovery | infra: homelab-scripts | | | | |
 | backup/restore | infra: homelab-scripts | | | | Level B saves are backed up with the games-hub data |
