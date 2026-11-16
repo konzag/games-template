@@ -175,7 +175,7 @@ for (const scheme of ['light', 'dark'] as const) {
     await page.goto('/?lang=en');
     await expectLang(page, 'en');
     await page.addStyleTag({ content: 'canvas#game { visibility: hidden !important; }' });
-    const { violations } = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+    const { violations } = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
     const bad = violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id);
     expect(bad).toEqual([]);
   });

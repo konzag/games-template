@@ -22,6 +22,9 @@ first.** Every rule there applies to this repo and to every game created from it
 - `.github/workflows/ci.yml`: `test` (floor check, test count, Playwright) + `gitleaks` on every PR into staging/main
   and every push to staging/main. A ruleset requires these two check names: a game keeps the job ids and
   `tests/ci-workflow.spec.ts`.
+- Plan K9: CI job `k9` runs `tools/k9-check.mjs` + its tests (canonical here for games, template-app for apps; a
+  game copies both `tools/k9-check*.mjs` verbatim). A missing item may only be excused in `k9-allowlist.json` with
+  a written reason; the entry must go once the item exists.
 
 ## Rules
 - Served by games-hub at `/<slug>/` behind its CSP: one inline `<script>` (hashed by the hub), no `<script src>`
