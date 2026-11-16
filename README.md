@@ -184,4 +184,5 @@ ID δοκιμών δεν είναι μοναδικά και αριθμημένα
 
 Ένα `<script>`, χωρίς `eval`, χωρίς `onclick="…"`, κανένα CDN ή Google Fonts, κανένα δίκτυο εκτός από το save
 API. Η γραμματοσειρά (Comfortaa) έρχεται από το hub (`/static/fonts/comfortaa.css`). Χωρίς προσωπικά δεδομένα,
-διαφημίσεις ή αγορές. Όλα είναι στο [GAME-STANDARD.md](GAME-STANDARD.md).
+διαφημίσεις ή αγορές. Offline: το παιχνίδι παίζει χωρίς δίκτυο μέσω του service worker του hub (games-hub ADR-0008)·
+κανένας δικός του service worker ή manifest (`tests/offline.spec.ts`). Όλα είναι στο [GAME-STANDARD.md](GAME-STANDARD.md).
