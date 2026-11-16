@@ -105,9 +105,8 @@ function openRepo(root, ref) {
     files,
     read: f => {
       try {
-        const full = path.join(root, f);
-        if (fs.statSync(full).size > MAX_BYTES) return null;
-        return fs.readFileSync(full, 'utf8');
+        const buf = fs.readFileSync(path.join(root, f));  // read once, then size-check (no stat-then-read race)
+        return buf.length > MAX_BYTES ? null : buf.toString('utf8');
       } catch { return null; }
     },
   };
