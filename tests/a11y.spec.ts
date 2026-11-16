@@ -9,7 +9,7 @@ async function seriousOrCritical(page: Page) {
   // "incomplete" (never a violation). Hiding the game canvas leaves the page background (--night, the same dark
   // blue as the drawn meadow) behind the shell, so the contrast of the shell text is really checked.
   await page.addStyleTag({ content: "canvas#game { visibility: hidden !important; }" });
-  const { violations } = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  const { violations } = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa']).analyze();
   return violations
     .filter((v) => v.impact === 'serious' || v.impact === 'critical')
     .map((v) => `${v.id} (${v.impact}): ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`);
