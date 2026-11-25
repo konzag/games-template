@@ -1,0 +1,8 @@
+{
+  "$comment": "K9 template check (tools/k9-check.mjs). kind: app | game. allow: items this repo still lacks, each with the reason; they are report-only (a CI warning) until added, then the entry must go (an entry for an item that exists fails).",
+  "kind": "game",
+  "allow": {
+    "unit-tests": "The game logic is one inline script in index.html, so there is no module a node unit test can import; every test runs through Playwright (tests/count-floor.mjs ratchets their number).",
+    "visual-baseline": "No committed toHaveScreenshot baselines yet: they must be generated on the Linux CI runner (fonts/rendering differ on Windows), so they come with their own PR."
+  }
+}
