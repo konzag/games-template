@@ -13,6 +13,9 @@ first.** Every rule there applies to this repo and to every game created from it
   1180x820, 820x1180, 360x740), `tests/lib.ts` (shared helpers, fake hub API; fake PIN `1234`).
 - `tests/serve.mjs` + `tests/hub-csp.mjs`: a stand-in for games-hub that sends the hub's game-page CSP;
   `tests/hub-csp.spec.ts` pins it to games-hub `page_csp` (update both when the hub policy changes).
+- Tests follow **[docs/TEST-STANDARD.md](docs/TEST-STANDARD.md)** (TEST-STANDARD v2 for games, 2026-11-27): the five
+  layers PR -> prod, tiers (a game's rows are `report` except its smoke row), quarantine, read-only prod rows,
+  rollback without a database (a `SCHEMA` bump is one-way) and the definition of done for a new game.
 - Test-count ratchet (TEST-STANDARD v1 §R-JS): `npm run test:count` fails when the listed Playwright tests are
   fewer than `tests/floors.json` `tests`; `.coverage-floor` holds the same number and `tools/coverage-floor-check.sh`
   (canonical copy from template-app) fails when it goes down (owner-only trailer `Coverage-Floor-Lowered-By: owner`).
