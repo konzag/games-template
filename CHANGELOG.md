@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Added (TEST-STANDARD v2, test pipeline 2026-11-26)
+- `docs/TEST-STANDARD.md`: TEST-STANDARD v2 for games: the five layers (PR, staging, release, prod, night / week),
+  100 % of the blocking rows, tier and `safe_on_prod` per row (a game's rows default to `report`, its smoke row is
+  `blocking`), the GAME-STANDARD rows of the acceptance suite, quarantine (≤ 14 days, ≤ 3 per game), read-only prod
+  rows, rollback without a database (a `SCHEMA` bump is one-way: «no automatic rollback»), same artifact, the
+  definition of done for a change and a new game, and what is planned and not live. CLAUDE.md links it.
+
 ### Added
 - CodeQL (NIGHT-2 item 3, 2026-11-10): `.github/workflows/codeql.yml` (javascript-typescript, which reads the inline
   script of index.html, and actions; buildless, security-extended, GitHub-hosted, actions pinned by SHA) next to
