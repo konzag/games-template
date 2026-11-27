@@ -148,14 +148,14 @@ A **new game** in addition, before its first release:
 | README as tester guide | `tests/readme.spec.ts` |
 | Which test types a new game gets | [docs/TEST-MATRIX.md](TEST-MATRIX.md) |
 
-## 5. Not live yet (planned, not done)
+## 5. Pipeline state (live and planned)
 
-State on 2026-11-27. Steps refer to the test pipeline plan of 2026-11-26.
+State on 2026-11-28. Steps refer to the test pipeline plan of 2026-11-26.
 
 | Part | State |
 |---|---|
-| Tier + `safe_on_prod` on every row, `check:catalog` (step 2) | built in the acceptance suite, in review |
-| Quarantine and its gate rules (step 3); the gate counts by tier | built in the acceptance suite, in review |
+| Tier + `safe_on_prod` on every row, `check:catalog` (step 2) | live: homelab-acceptance #189 (merged 2026-11-27) |
+| Quarantine and its gate rules (step 3); the gate counts by tier | live: homelab-acceptance #192 and #197 (merged 2026-11-27) |
 | **A gate for a game on every staging change** (step 4) | **planned**: waits for an owner decision (the bot login for day gates); today a game has no gate |
 | **Prod smoke after each deploy + revert on red** (step 5) | **planned**: waits for owner decisions (the automated prod run and its login; revert or hold); today prod checks the hub's `/version` and health only |
 | A blocking row that skips holds the release | open question for the owner; today a skip is counted and does not hold |
